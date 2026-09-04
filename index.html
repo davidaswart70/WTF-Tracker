@@ -31,7 +31,6 @@
 
   .app{ display:flex; min-height:100vh; }
 
-  /* Sidebar */
   .sidebar{
     width:220px; flex-shrink:0; background:var(--navy); color:#fff;
     display:flex; flex-direction:column; padding:22px 14px;
@@ -56,8 +55,7 @@
 
   .side-foot{ margin-top:auto; padding:10px 8px 0; font-size:11px; color:#9aa0c4; border-top:1px solid rgba(255,255,255,.12); padding-top:14px; }
 
-  /* Main */
-  main{ flex:1; padding:32px 40px; max-width:1040px; }
+  main{ flex:1; padding:32px 40px; max-width:1120px; }
   .page-head{ margin-bottom:22px; }
   .page-head h1{ margin:0 0 4px; font-size:22px; font-weight:700; color:var(--navy); }
   .page-head p{ margin:0; color:var(--ink-soft); font-size:13.5px; }
@@ -67,21 +65,21 @@
     padding:22px 24px; margin-bottom:18px;
   }
 
-  /* Form */
   .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px 18px; }
+  .form-grid.cols-3{ grid-template-columns:1fr 1fr 1fr; }
   .field{ position:relative; display:flex; flex-direction:column; gap:6px; }
   .field.full{ grid-column:1 / -1; }
   label{ font-size:12px; font-weight:600; color:var(--ink-soft); text-transform:none; }
   input[type=text], input[type=date]{
     border:1.5px solid var(--line); border-radius:8px; padding:9px 11px; font-size:14px;
-    font-family:inherit; color:var(--ink); background:#fff;
+    font-family:inherit; color:var(--ink); background:#fff; width:100%;
   }
   input:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(32,36,96,.12); }
 
   .autocomplete-list{
     position:absolute; top:100%; left:0; right:0; margin-top:4px; background:#fff;
     border:1.5px solid var(--line); border-radius:8px; box-shadow:var(--shadow);
-    max-height:220px; overflow-y:auto; z-index:20; display:none;
+    max-height:220px; overflow-y:auto; z-index:30; display:none;
   }
   .autocomplete-list.open{ display:block; }
   .autocomplete-list .opt{
@@ -102,22 +100,21 @@
   .btn-sm{ padding:6px 12px; font-size:12.5px; border-radius:7px; }
   .form-actions{ grid-column:1/-1; display:flex; justify-content:flex-end; gap:10px; margin-top:4px; }
 
-  /* Table */
   table{ width:100%; border-collapse:collapse; font-size:13.5px; }
-  th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); padding:8px 10px; border-bottom:1.5px solid var(--line); }
-  td{ padding:11px 10px; border-bottom:1px solid #eef0f3; vertical-align:top; }
+  th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); padding:8px 8px; border-bottom:1.5px solid var(--line); }
+  td{ padding:10px 8px; border-bottom:1px solid #eef0f3; vertical-align:top; }
   tr:last-child td{ border-bottom:none; }
   .code{ font-family:'Space Grotesk'; font-weight:600; color:var(--navy); }
   .pill{ display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:99px; font-size:11.5px; font-weight:700; }
   .pill-out{ background:var(--out-bg); color:var(--out); }
   .pill-returned{ background:var(--returned-bg); color:var(--returned); }
-  .pill-dot{ width:6px;height:6px;border-radius:50%; background:currentColor; }
-  .row-actions button{ font-size:12px; }
+  .row-actions{ display:flex; gap:6px; white-space:nowrap; }
   .empty{ padding:30px 10px; text-align:center; color:var(--ink-soft); }
 
-  .toolbar{ display:flex; gap:10px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
-  .toolbar input[type=text]{ min-width:220px; }
-  .toolbar .count{ margin-left:auto; font-size:12.5px; color:var(--ink-soft); }
+  .search-row{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr auto; gap:10px; margin-bottom:14px; align-items:end; }
+  .search-row .field{ gap:4px; }
+  .search-row label{ font-size:10.5px; }
+  .search-row .count{ font-size:12.5px; color:var(--ink-soft); padding-bottom:9px; white-space:nowrap; }
 
   .kpis{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:18px; }
   .kpi{ background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; }
@@ -127,23 +124,34 @@
   .toast{
     position:fixed; bottom:24px; right:24px; background:var(--navy); color:#fff; padding:12px 18px;
     border-radius:9px; font-size:13.5px; font-weight:600; box-shadow:var(--shadow); opacity:0; pointer-events:none;
-    transform:translateY(8px); transition:all .25s ease; z-index:100;
+    transform:translateY(8px); transition:all .25s ease; z-index:200;
   }
   .toast.show{ opacity:1; transform:translateY(0); }
-
-  .hint{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
-  .badge-new{ font-size:10px; background:var(--navy); color:#fff; padding:1px 6px; border-radius:5px; font-weight:700; }
 
   .hist-item{ display:flex; gap:12px; padding:12px 0; border-bottom:1px solid #eef0f3; }
   .hist-item:last-child{ border-bottom:none; }
   .hist-item .idot{ width:8px;height:8px;border-radius:50%; margin-top:6px; flex-shrink:0; }
   .hist-item .idot.placed{ background:var(--out); }
   .hist-item .idot.returned{ background:var(--returned); }
+  .hist-item .idot.edited{ background:#8b8fae; }
   .hist-item .itxt b{ color:var(--navy); }
   .hist-item .itime{ font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
 
   section.page{ display:none; }
   section.page.active{ display:block; }
+
+  /* Edit modal */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(20,24,60,.45); display:none;
+    align-items:center; justify-content:center; z-index:100;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal{
+    background:#fff; border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:24px 26px; width:520px; max-width:92vw; max-height:88vh; overflow-y:auto;
+  }
+  .modal h2{ margin:0 0 4px; font-size:18px; color:var(--navy); }
+  .modal .sub{ margin:0 0 18px; font-size:12.5px; color:var(--ink-soft); }
 </style>
 </head>
 <body>
@@ -158,7 +166,7 @@
       <button class="nav-btn active" data-page="add"><span class="dot"></span> Add Toilet</button>
       <button class="nav-btn" data-page="out"><span class="dot"></span> Currently Out</button>
       <button class="nav-btn" data-page="history"><span class="dot"></span> History</button>
-      <button class="nav-btn" data-page="manage"><span class="dot"></span> Clients &amp; Towns</button>
+      <button class="nav-btn" data-page="manage"><span class="dot"></span> Clients, Towns &amp; Codes</button>
     </nav>
     <div class="side-foot">Connected to your live Google Sheet.<br>Every action here updates the Sheet directly.</div>
   </aside>
@@ -169,13 +177,14 @@
     <section class="page active" id="page-add">
       <div class="page-head">
         <h1>Add a toilet placement</h1>
-        <p>Start typing a town or client to search &mdash; press "Add new" if it's not in the list yet.</p>
+        <p>Start typing a town, client or code to search &mdash; press "Add new" if it's not in the list yet.</p>
       </div>
       <div class="card">
         <div class="form-grid" id="add-form">
           <div class="field">
             <label>Toilet code</label>
-            <input type="text" id="f-code" placeholder="e.g. bpn-873">
+            <input type="text" id="f-code" placeholder="Start typing, e.g. &quot;bpn&quot;..." autocomplete="off">
+            <div class="autocomplete-list" id="code-list"></div>
           </div>
           <div class="field">
             <label>Placed date</label>
@@ -191,9 +200,13 @@
             <input type="text" id="f-client" placeholder="Start typing a client name..." autocomplete="off">
             <div class="autocomplete-list" id="client-list"></div>
           </div>
-          <div class="field full">
-            <label>Location / site notes</label>
-            <input type="text" id="f-location" placeholder="e.g. erf 555, weste str 12">
+          <div class="field">
+            <label>Erf number</label>
+            <input type="text" id="f-erf" placeholder="e.g. 555 (optional)">
+          </div>
+          <div class="field">
+            <label>Street / address</label>
+            <input type="text" id="f-street" placeholder="e.g. Weste str 12 (optional)">
           </div>
           <div class="form-actions">
             <button class="btn btn-ghost" id="clear-form">Clear</button>
@@ -215,15 +228,18 @@
         <div class="kpi"><div class="num" id="kpi-towns">0</div><div class="lbl">Towns covered</div></div>
       </div>
       <div class="card">
-        <div class="toolbar">
-          <input type="text" id="out-search" placeholder="Filter by client, town or code...">
-          <span class="count" id="out-count"></span>
+        <div class="search-row">
+          <div class="field"><label>Code</label><input type="text" id="s-code" placeholder="Filter code..."></div>
+          <div class="field"><label>Client</label><input type="text" id="s-client" placeholder="Filter client..."></div>
+          <div class="field"><label>Town</label><input type="text" id="s-town" placeholder="Filter town..."></div>
+          <div class="field"><label>Erf / Street</label><input type="text" id="s-loc" placeholder="Filter erf or street..."></div>
+          <div class="count" id="out-count"></div>
         </div>
         <table>
-          <thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Location</th><th>Placed</th><th></th></tr></thead>
+          <thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th></th></tr></thead>
           <tbody id="out-tbody"></tbody>
         </table>
-        <div class="empty" id="out-empty" style="display:none;">No toilets match that filter.</div>
+        <div class="empty" id="out-empty" style="display:none;">No toilets match those filters.</div>
       </div>
     </section>
 
@@ -231,10 +247,10 @@
     <section class="page" id="page-history">
       <div class="page-head">
         <h1>History</h1>
-        <p>A permanent, append-only log of every placement and return.</p>
+        <p>A permanent, append-only log of every placement, edit and return.</p>
       </div>
       <div class="card">
-        <div class="toolbar">
+        <div class="form-grid" style="margin-bottom:14px;">
           <input type="text" id="hist-search" placeholder="Filter history...">
         </div>
         <div id="hist-list"></div>
@@ -245,37 +261,40 @@
     <!-- MANAGE -->
     <section class="page" id="page-manage">
       <div class="page-head">
-        <h1>Clients &amp; towns</h1>
+        <h1>Clients, towns &amp; codes</h1>
         <p>The master lists that power the search &amp; autocomplete everywhere else in the app.</p>
       </div>
       <div class="card">
-        <div class="form-grid">
+        <div class="form-grid cols-3">
           <div class="field">
             <label>Add a client</label>
             <input type="text" id="new-client-name" placeholder="Client name">
-          </div>
-          <div class="field">
-            <label>&nbsp;</label>
-            <button class="btn btn-primary" id="add-client-btn">Add client</button>
           </div>
           <div class="field">
             <label>Add a town</label>
             <input type="text" id="new-town-name" placeholder="Town name">
           </div>
           <div class="field">
-            <label>&nbsp;</label>
-            <button class="btn btn-primary" id="add-town-btn">Add town</button>
+            <label>Add a code</label>
+            <input type="text" id="new-code-name" placeholder="Toilet code">
           </div>
+          <button class="btn btn-primary" id="add-client-btn">Add client</button>
+          <button class="btn btn-primary" id="add-town-btn">Add town</button>
+          <button class="btn btn-primary" id="add-code-btn">Add code</button>
         </div>
       </div>
-      <div class="card" style="display:flex; gap:24px;">
-        <div style="flex:1;">
+      <div class="card" style="display:flex; gap:24px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:180px;">
           <h3 style="margin:0 0 10px; font-size:14px; color:var(--navy);">Clients (<span id="client-total">0</span>)</h3>
           <div id="client-chips" style="max-height:320px; overflow-y:auto; display:flex; flex-wrap:wrap; gap:6px;"></div>
         </div>
-        <div style="flex:1;">
+        <div style="flex:1; min-width:180px;">
           <h3 style="margin:0 0 10px; font-size:14px; color:var(--navy);">Towns (<span id="town-total">0</span>)</h3>
           <div id="town-chips" style="max-height:320px; overflow-y:auto; display:flex; flex-wrap:wrap; gap:6px;"></div>
+        </div>
+        <div style="flex:1; min-width:180px;">
+          <h3 style="margin:0 0 10px; font-size:14px; color:var(--navy);">Codes (<span id="code-total">0</span>)</h3>
+          <div id="code-chips" style="max-height:320px; overflow-y:auto; display:flex; flex-wrap:wrap; gap:6px;"></div>
         </div>
       </div>
     </section>
@@ -283,12 +302,54 @@
   </main>
 </div>
 
+<!-- EDIT MODAL -->
+<div class="modal-backdrop" id="edit-backdrop">
+  <div class="modal">
+    <h2>Edit toilet</h2>
+    <p class="sub">Fixes here are logged to History as an "edited" event.</p>
+    <div class="form-grid" id="edit-form">
+      <div class="field">
+        <label>Toilet code</label>
+        <input type="text" id="e-code" autocomplete="off">
+        <div class="autocomplete-list" id="e-code-list"></div>
+      </div>
+      <div class="field">
+        <label>Placed date</label>
+        <input type="date" id="e-date">
+      </div>
+      <div class="field">
+        <label>Town</label>
+        <input type="text" id="e-town" autocomplete="off">
+        <div class="autocomplete-list" id="e-town-list"></div>
+      </div>
+      <div class="field">
+        <label>Client</label>
+        <input type="text" id="e-client" autocomplete="off">
+        <div class="autocomplete-list" id="e-client-list"></div>
+      </div>
+      <div class="field">
+        <label>Erf number</label>
+        <input type="text" id="e-erf">
+      </div>
+      <div class="field">
+        <label>Street / address</label>
+        <input type="text" id="e-street">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" id="edit-cancel">Cancel</button>
+        <button class="btn btn-primary" id="edit-save">Save changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbwOlBa-ssCfgg5UXqlNUmMir7eEIN8eNRh_EsPJEBvehgzIy-F01cTF18yJ6YrqFisOBQ/exec';
 
-let state = { clients: [], towns: [], records: [], history: [] };
+let state = { clients: [], towns: [], codes: [], records: [], history: [] };
+let editingId = null;
 
 /* ---------- API helpers ---------- */
 async function apiGet(action, params){
@@ -301,7 +362,7 @@ async function apiGet(action, params){
 async function apiPost(action, body){
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight; Apps Script parses JSON regardless
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ action, ...(body||{}) })
   });
   const data = await res.json();
@@ -333,17 +394,19 @@ function setLoading(on){
 async function refreshAll(){
   setLoading(true);
   try{
-    const [clients, towns, toilets, history] = await Promise.all([
+    const [clients, towns, codes, toilets, history] = await Promise.all([
       apiGet('getClients'),
       apiGet('getTowns'),
+      apiGet('getCodes'),
       apiGet('getToilets'),
       apiGet('getHistory'),
     ]);
     state.clients = (clients||[]).filter(Boolean).sort();
     state.towns = (towns||[]).filter(Boolean).sort();
+    state.codes = (codes||[]).filter(Boolean).sort();
     state.records = (toilets||[]).map(r => ({
       id: r['Toilet ID'], code: r['Code'], client: r['Client'], town: r['Town'],
-      location: r['Location'], placedDate: r['Placed Date'],
+      erf: r['Erf'], street: r['Street'], placedDate: r['Placed Date'],
       status: r['Status'], returnedDate: r['Returned Date']
     }));
     state.history = (history||[]).map(h => ({
@@ -370,7 +433,7 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
   });
 });
 
-/* ---------- Autocomplete ---------- */
+/* ---------- Autocomplete (reusable for any input+list pair) ---------- */
 function setupAutocomplete(inputEl, listEl, getOptions, onAdd){
   let hi = -1;
   function render(query){
@@ -415,6 +478,14 @@ function setupAutocomplete(inputEl, listEl, getOptions, onAdd){
 /* ---------- Add Toilet page ---------- */
 function initAddForm(){
   setupAutocomplete(
+    document.getElementById('f-code'), document.getElementById('code-list'),
+    ()=>state.codes,
+    async (name)=>{
+      try{ await apiPost('addCode', {name}); state.codes.push(name); state.codes.sort(); toast('Added new code: '+name); }
+      catch(err){ toast('Could not add code: '+err.message, true); }
+    }
+  );
+  setupAutocomplete(
     document.getElementById('f-town'), document.getElementById('town-list'),
     ()=>state.towns,
     async (name)=>{
@@ -432,7 +503,7 @@ function initAddForm(){
   );
 
   document.getElementById('clear-form').addEventListener('click', ()=>{
-    ['f-code','f-date','f-town','f-client','f-location'].forEach(id=>document.getElementById(id).value='');
+    ['f-code','f-date','f-town','f-client','f-erf','f-street'].forEach(id=>document.getElementById(id).value='');
   });
 
   document.getElementById('submit-toilet').addEventListener('click', async ()=>{
@@ -440,13 +511,14 @@ function initAddForm(){
     const date = document.getElementById('f-date').value;
     const town = document.getElementById('f-town').value.trim();
     const client = document.getElementById('f-client').value.trim();
-    const location = document.getElementById('f-location').value.trim();
+    const erf = document.getElementById('f-erf').value.trim();
+    const street = document.getElementById('f-street').value.trim();
     if(!code || !town || !client){ toast('Code, town and client are required', true); return; }
     setLoading(true);
     try{
-      await apiPost('addToilet', { code, client, town, location, placedDate: date||todayStr() });
+      await apiPost('addToilet', { code, client, town, erf, street, placedDate: date||todayStr() });
       toast('Toilet '+code+' added to the Sheet');
-      ['f-code','f-date','f-town','f-client','f-location'].forEach(id=>document.getElementById(id).value='');
+      ['f-code','f-date','f-town','f-client','f-erf','f-street'].forEach(id=>document.getElementById(id).value='');
       document.getElementById('f-date').value = todayStr();
       await refreshAll();
     }catch(err){
@@ -461,15 +533,22 @@ function todayStr(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
-/* ---------- Currently Out page ---------- */
+/* ---------- Currently Out page (per-column search, AND logic) ---------- */
 function renderOut(){
-  const q = document.getElementById('out-search').value.trim().toLowerCase();
+  const qCode = document.getElementById('s-code').value.trim().toLowerCase();
+  const qClient = document.getElementById('s-client').value.trim().toLowerCase();
+  const qTown = document.getElementById('s-town').value.trim().toLowerCase();
+  const qLoc = document.getElementById('s-loc').value.trim().toLowerCase();
+
   const tbody = document.getElementById('out-tbody');
   tbody.innerHTML = '';
   let rows = state.records.filter(r=>r.status==='out');
-  if(q){
-    rows = rows.filter(r => (r.code+' '+r.client+' '+r.town+' '+r.location).toLowerCase().includes(q));
-  }
+
+  if(qCode)   rows = rows.filter(r => (r.code||'').toLowerCase().includes(qCode));
+  if(qClient) rows = rows.filter(r => (r.client||'').toLowerCase().includes(qClient));
+  if(qTown)   rows = rows.filter(r => (r.town||'').toLowerCase().includes(qTown));
+  if(qLoc)    rows = rows.filter(r => ((r.erf||'')+' '+(r.street||'')).toLowerCase().includes(qLoc));
+
   document.getElementById('out-count').textContent = rows.length + ' shown';
   document.getElementById('out-empty').style.display = rows.length? 'none':'block';
 
@@ -479,17 +558,22 @@ function renderOut(){
       <td class="code">${r.code}</td>
       <td>${r.client}</td>
       <td>${r.town}</td>
-      <td>${r.location||''}</td>
+      <td>${r.erf||''}</td>
+      <td>${r.street||''}</td>
       <td>${r.placedDate||''}</td>
-      <td class="row-actions"><button class="btn btn-ghost btn-sm" data-id="${r.id}">Mark returned</button></td>
+      <td class="row-actions">
+        <button class="btn btn-ghost btn-sm" data-edit="${r.id}">Edit</button>
+        <button class="btn btn-ghost btn-sm" data-return="${r.id}">Mark returned</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
-  tbody.querySelectorAll('button[data-id]').forEach(b=>{
+
+  tbody.querySelectorAll('button[data-return]').forEach(b=>{
     b.addEventListener('click', async ()=>{
       setLoading(true);
       try{
-        await apiPost('markReturned', { toiletId: b.dataset.id });
+        await apiPost('markReturned', { toiletId: b.dataset.return });
         toast('Marked returned');
         await refreshAll();
         renderOut();
@@ -498,6 +582,10 @@ function renderOut(){
       }
       setLoading(false);
     });
+  });
+
+  tbody.querySelectorAll('button[data-edit]').forEach(b=>{
+    b.addEventListener('click', ()=> openEditModal(b.dataset.edit));
   });
 
   updateKpis();
@@ -510,7 +598,70 @@ function updateKpis(){
   document.getElementById('kpi-towns').textContent = new Set(out.map(r=>r.town)).size;
 }
 
-document.getElementById('out-search').addEventListener('input', renderOut);
+['s-code','s-client','s-town','s-loc'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderOut);
+});
+
+/* ---------- Edit modal ---------- */
+function initEditModal(){
+  setupAutocomplete(
+    document.getElementById('e-code'), document.getElementById('e-code-list'),
+    ()=>state.codes,
+    async (name)=>{ try{ await apiPost('addCode', {name}); state.codes.push(name); state.codes.sort(); }catch(e){} }
+  );
+  setupAutocomplete(
+    document.getElementById('e-town'), document.getElementById('e-town-list'),
+    ()=>state.towns,
+    async (name)=>{ try{ await apiPost('addTown', {name}); state.towns.push(name); state.towns.sort(); }catch(e){} }
+  );
+  setupAutocomplete(
+    document.getElementById('e-client'), document.getElementById('e-client-list'),
+    ()=>state.clients,
+    async (name)=>{ try{ await apiPost('addClient', {name}); state.clients.push(name); state.clients.sort(); }catch(e){} }
+  );
+
+  document.getElementById('edit-cancel').addEventListener('click', closeEditModal);
+  document.getElementById('edit-backdrop').addEventListener('click', (e)=>{
+    if(e.target.id==='edit-backdrop') closeEditModal();
+  });
+
+  document.getElementById('edit-save').addEventListener('click', async ()=>{
+    const code = document.getElementById('e-code').value.trim();
+    const town = document.getElementById('e-town').value.trim();
+    const client = document.getElementById('e-client').value.trim();
+    const erf = document.getElementById('e-erf').value.trim();
+    const street = document.getElementById('e-street').value.trim();
+    const placedDate = document.getElementById('e-date').value;
+    setLoading(true);
+    try{
+      await apiPost('editToilet', { toiletId: editingId, code, town, client, erf, street, placedDate });
+      toast('Changes saved');
+      closeEditModal();
+      await refreshAll();
+      renderOut();
+    }catch(err){
+      toast('Could not save: '+err.message, true);
+    }
+    setLoading(false);
+  });
+}
+
+function openEditModal(id){
+  const r = state.records.find(x=>x.id===id);
+  if(!r) return;
+  editingId = id;
+  document.getElementById('e-code').value = r.code||'';
+  document.getElementById('e-town').value = r.town||'';
+  document.getElementById('e-client').value = r.client||'';
+  document.getElementById('e-erf').value = r.erf||'';
+  document.getElementById('e-street').value = r.street||'';
+  document.getElementById('e-date').value = r.placedDate||'';
+  document.getElementById('edit-backdrop').classList.add('open');
+}
+function closeEditModal(){
+  editingId = null;
+  document.getElementById('edit-backdrop').classList.remove('open');
+}
 
 /* ---------- History page ---------- */
 function renderHistory(){
@@ -520,10 +671,11 @@ function renderHistory(){
   let items = state.history;
   if(q){ items = items.filter(h => (h.code+' '+h.client+' '+h.town+' '+h.type).toLowerCase().includes(q)); }
   document.getElementById('hist-empty').style.display = items.length? 'none':'block';
+  const labels = { placed:'placed at', returned:'returned from', edited:'edited &middot; now at' };
   items.slice(0,300).forEach(h=>{
     const div = document.createElement('div');
     div.className = 'hist-item';
-    const label = h.type==='placed' ? 'placed at' : 'returned from';
+    const label = labels[h.type] || h.type;
     div.innerHTML = `
       <div class="idot ${h.type}"></div>
       <div class="itxt">
@@ -539,10 +691,13 @@ document.getElementById('hist-search').addEventListener('input', renderHistory);
 function renderManage(){
   document.getElementById('client-total').textContent = state.clients.length;
   document.getElementById('town-total').textContent = state.towns.length;
+  document.getElementById('code-total').textContent = state.codes.length;
   const cWrap = document.getElementById('client-chips'); cWrap.innerHTML='';
   state.clients.forEach(c=>cWrap.appendChild(chip(c)));
   const tWrap = document.getElementById('town-chips'); tWrap.innerHTML='';
   state.towns.forEach(t=>tWrap.appendChild(chip(t)));
+  const kWrap = document.getElementById('code-chips'); kWrap.innerHTML='';
+  state.codes.forEach(k=>kWrap.appendChild(chip(k)));
 }
 
 document.getElementById('add-client-btn').addEventListener('click', async ()=>{
@@ -573,11 +728,26 @@ document.getElementById('add-town-btn').addEventListener('click', async ()=>{
   }catch(err){ toast('Could not add town: '+err.message, true); }
   setLoading(false);
 });
+document.getElementById('add-code-btn').addEventListener('click', async ()=>{
+  const el = document.getElementById('new-code-name');
+  const v = el.value.trim();
+  if(!v) return;
+  setLoading(true);
+  try{
+    await apiPost('addCode', {name:v});
+    toast('Code added: '+v);
+    el.value='';
+    await refreshAll();
+    renderManage();
+  }catch(err){ toast('Could not add code: '+err.message, true); }
+  setLoading(false);
+});
 
 /* ---------- Init ---------- */
 (async function init(){
   document.getElementById('f-date').value = todayStr();
   initAddForm();
+  initEditModal();
   await refreshAll();
   renderOut();
 })();
