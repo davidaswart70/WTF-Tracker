@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weskus Toilet Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#202460;
+    --navy-dark:#161a47;
+    --periwinkle:#DDE3E9;
+    --white:#ffffff;
+    --ink:#20232b;
+    --ink-soft:#5b6270;
+    --line:#c9d1da;
+    --out:#b5651d;
+    --out-bg:#fbe9dc;
+    --returned:#2f6f4e;
+    --returned-bg:#e2f2e9;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(20,24,60,.06), 0 4px 16px rgba(20,24,60,.06);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--periwinkle); color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif; font-size:14px; line-height:1.5;
+  }
+  h1,h2,h3,.brand{ font-family:'Space Grotesk',system-ui,sans-serif; }
+
+  .app{ display:flex; min-height:100vh; }
+
+  /* Sidebar */
+  .sidebar{
+    width:220px; flex-shrink:0; background:var(--navy); color:#fff;
+    display:flex; flex-direction:column; padding:22px 14px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; padding:0 8px 22px; }
+  .brand .mark{
+    width:34px; height:34px; border-radius:50%; border:2px solid #fff;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px;
+    flex-shrink:0;
+  }
+  .brand .name{ font-weight:700; font-size:15px; line-height:1.15; }
+  .brand .name span{ display:block; font-family:'Inter'; font-weight:400; font-size:10.5px; opacity:.7; letter-spacing:.03em; }
+
+  nav{ display:flex; flex-direction:column; gap:2px; margin-top:6px; }
+  nav button{
+    all:unset; cursor:pointer; padding:10px 12px; border-radius:8px; font-size:13.5px;
+    font-weight:600; color:#c7cbe6; display:flex; align-items:center; gap:9px;
+  }
+  nav button:hover{ background:rgba(255,255,255,.08); color:#fff; }
+  nav button.active{ background:#fff; color:var(--navy); }
+  nav button .dot{ width:6px;height:6px;border-radius:50%; background:currentColor; opacity:.55; }
+
+  .side-foot{ margin-top:auto; padding:10px 8px 0; font-size:11px; color:#9aa0c4; border-top:1px solid rgba(255,255,255,.12); padding-top:14px; }
+
+  /* Main */
+  main{ flex:1; padding:32px 40px; max-width:1040px; }
+  .page-head{ margin-bottom:22px; }
+  .page-head h1{ margin:0 0 4px; font-size:22px; font-weight:700; color:var(--navy); }
+  .page-head p{ margin:0; color:var(--ink-soft); font-size:13.5px; }
+
+  .card{
+    background:#fff; border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:22px 24px; margin-bottom:18px;
+  }
+
+  /* Form */
+  .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px 18px; }
+  .field{ position:relative; display:flex; flex-direction:column; gap:6px; }
+  .field.full{ grid-column:1 / -1; }
+  label{ font-size:12px; font-weight:600; color:var(--ink-soft); text-transform:none; }
+  input[type=text], input[type=date]{
+    border:1.5px solid var(--line); border-radius:8px; padding:9px 11px; font-size:14px;
+    font-family:inherit; color:var(--ink); background:#fff;
+  }
+  input:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(32,36,96,.12); }
+
+  .autocomplete-list{
+    position:absolute; top:100%; left:0; right:0; margin-top:4px; background:#fff;
+    border:1.5px solid var(--line); border-radius:8px; box-shadow:var(--shadow);
+    max-height:220px; overflow-y:auto; z-index:20; display:none;
+  }
+  .autocomplete-list.open{ display:block; }
+  .autocomplete-list .opt{
+    padding:9px 12px; cursor:pointer; font-size:13.5px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .autocomplete-list .opt:hover, .autocomplete-list .opt.hi{ background:var(--periwinkle); }
+  .autocomplete-list .opt.add-new{ color:var(--navy); font-weight:600; border-top:1px solid var(--line); }
+  .autocomplete-list .muted{ color:var(--ink-soft); font-size:11.5px; }
+
+  .btn{
+    all:unset; cursor:pointer; padding:10px 18px; border-radius:8px; font-weight:700; font-size:13.5px;
+    display:inline-flex; align-items:center; gap:7px;
+  }
+  .btn-primary{ background:var(--navy); color:#fff; }
+  .btn-primary:hover{ background:var(--navy-dark); }
+  .btn-ghost{ background:transparent; color:var(--navy); border:1.5px solid var(--navy); }
+  .btn-ghost:hover{ background:var(--periwinkle); }
+  .btn-sm{ padding:6px 12px; font-size:12.5px; border-radius:7px; }
+  .form-actions{ grid-column:1/-1; display:flex; justify-content:flex-end; gap:10px; margin-top:4px; }
+
+  /* Table */
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); padding:8px 10px; border-bottom:1.5px solid var(--line); }
+  td{ padding:11px 10px; border-bottom:1px solid #eef0f3; vertical-align:top; }
+  tr:last-child td{ border-bottom:none; }
+  .code{ font-family:'Space Grotesk'; font-weight:600; color:var(--navy); }
+  .pill{ display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:99px; font-size:11.5px; font-weight:700; }
+  .pill-out{ background:var(--out-bg); color:var(--out); }
+  .pill-returned{ background:var(--returned-bg); color:var(--returned); }
+  .pill-dot{ width:6px;height:6px;border-radius:50%; background:currentColor; }
+  .row-actions button{ font-size:12px; }
+  .empty{ padding:30px 10px; text-align:center; color:var(--ink-soft); }
+
+  .toolbar{ display:flex; gap:10px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+  .toolbar input[type=text]{ min-width:220px; }
+  .toolbar .count{ margin-left:auto; font-size:12.5px; color:var(--ink-soft); }
+
+  .kpis{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:18px; }
+  .kpi{ background:#fff; border-radius:var(--radius); box-shadow:var(--shadow); padding:16px 18px; }
+  .kpi .num{ font-family:'Space Grotesk'; font-size:26px; font-weight:700; color:var(--navy); }
+  .kpi .lbl{ font-size:12px; color:var(--ink-soft); font-weight:600; }
+
+  .toast{
+    position:fixed; bottom:24px; right:24px; background:var(--navy); color:#fff; padding:12px 18px;
+    border-radius:9px; font-size:13.5px; font-weight:600; box-shadow:var(--shadow); opacity:0; pointer-events:none;
+    transform:translateY(8px); transition:all .25s ease; z-index:100;
+  }
+  .toast.show{ opacity:1; transform:translateY(0); }
+
+  .hint{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+  .badge-new{ font-size:10px; background:var(--navy); color:#fff; padding:1px 6px; border-radius:5px; font-weight:700; }
+
+  .hist-item{ display:flex; gap:12px; padding:12px 0; border-bottom:1px solid #eef0f3; }
+  .hist-item:last-child{ border-bottom:none; }
+  .hist-item .idot{ width:8px;height:8px;border-radius:50%; margin-top:6px; flex-shrink:0; }
+  .hist-item .idot.placed{ background:var(--out); }
+  .hist-item .idot.returned{ background:var(--returned); }
+  .hist-item .itxt b{ color:var(--navy); }
+  .hist-item .itime{ font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
+
+  section.page{ display:none; }
+  section.page.active{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">W</div>
+      <div class="name">Weskus<span>TOILET TRACKER</span></div>
+    </div>
+    <nav>
+      <button class="nav-btn active" data-page="add"><span class="dot"></span> Add Toilet</button>
+      <button class="nav-btn" data-page="out"><span class="dot"></span> Currently Out</button>
+      <button class="nav-btn" data-page="history"><span class="dot"></span> History</button>
+      <button class="nav-btn" data-page="manage"><span class="dot"></span> Clients &amp; Towns</button>
+    </nav>
+    <div class="side-foot">Connected to your live Google Sheet.<br>Every action here updates the Sheet directly.</div>
+  </aside>
+
+  <main>
+
+    <!-- ADD TOILET -->
+    <section class="page active" id="page-add">
+      <div class="page-head">
+        <h1>Add a toilet placement</h1>
+        <p>Start typing a town or client to search &mdash; press "Add new" if it's not in the list yet.</p>
+      </div>
+      <div class="card">
+        <div class="form-grid" id="add-form">
+          <div class="field">
+            <label>Toilet code</label>
+            <input type="text" id="f-code" placeholder="e.g. bpn-873">
+          </div>
+          <div class="field">
+            <label>Placed date</label>
+            <input type="date" id="f-date">
+          </div>
+          <div class="field">
+            <label>Town</label>
+            <input type="text" id="f-town" placeholder="Start typing, e.g. &quot;sal&quot;..." autocomplete="off">
+            <div class="autocomplete-list" id="town-list"></div>
+          </div>
+          <div class="field">
+            <label>Client</label>
+            <input type="text" id="f-client" placeholder="Start typing a client name..." autocomplete="off">
+            <div class="autocomplete-list" id="client-list"></div>
+          </div>
+          <div class="field full">
+            <label>Location / site notes</label>
+            <input type="text" id="f-location" placeholder="e.g. erf 555, weste str 12">
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-ghost" id="clear-form">Clear</button>
+            <button class="btn btn-primary" id="submit-toilet">Add toilet</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CURRENTLY OUT -->
+    <section class="page" id="page-out">
+      <div class="page-head">
+        <h1>Currently out</h1>
+        <p>Every toilet placed and not yet marked returned.</p>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="num" id="kpi-out">0</div><div class="lbl">Toilets out</div></div>
+        <div class="kpi"><div class="num" id="kpi-clients">0</div><div class="lbl">Active clients</div></div>
+        <div class="kpi"><div class="num" id="kpi-towns">0</div><div class="lbl">Towns covered</div></div>
+      </div>
+      <div class="card">
+        <div class="toolbar">
+          <input type="text" id="out-search" placeholder="Filter by client, town or code...">
+          <span class="count" id="out-count"></span>
+        </div>
+        <table>
+          <thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Location</th><th>Placed</th><th></th></tr></thead>
+          <tbody id="out-tbody"></tbody>
+        </table>
+        <div class="empty" id="out-empty" style="display:none;">No toilets match that filter.</div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="page" id="page-history">
+      <div class="page-head">
+        <h1>History</h1>
+        <p>A permanent, append-only log of every placement and return.</p>
+      </div>
+      <div class="card">
+        <div class="toolbar">
+          <input type="text" id="hist-search" placeholder="Filter history...">
+        </div>
+        <div id="hist-list"></div>
+        <div class="empty" id="hist-empty" style="display:none;">No history yet.</div>
+      </div>
+    </section>
+
+    <!-- MANAGE -->
+    <section class="page" id="page-manage">
+      <div class="page-head">
+        <h1>Clients &amp; towns</h1>
+        <p>The master lists that power the search &amp; autocomplete everywhere else in the app.</p>
+      </div>
+      <div class="card">
+        <div class="form-grid">
+          <div class="field">
+            <label>Add a client</label>
+            <input type="text" id="new-client-name" placeholder="Client name">
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" id="add-client-btn">Add client</button>
+          </div>
+          <div class="field">
+            <label>Add a town</label>
+            <input type="text" id="new-town-name" placeholder="Town name">
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" id="add-town-btn">Add town</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="display:flex; gap:24px;">
+        <div style="flex:1;">
+          <h3 style="margin:0 0 10px; font-size:14px; color:var(--navy);">Clients (<span id="client-total">0</span>)</h3>
+          <div id="client-chips" style="max-height:320px; overflow-y:auto; display:flex; flex-wrap:wrap; gap:6px;"></div>
+        </div>
+        <div style="flex:1;">
+          <h3 style="margin:0 0 10px; font-size:14px; color:var(--navy);">Towns (<span id="town-total">0</span>)</h3>
+          <div id="town-chips" style="max-height:320px; overflow-y:auto; display:flex; flex-wrap:wrap; gap:6px;"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbwOlBa-ssCfgg5UXqlNUmMir7eEIN8eNRh_EsPJEBvehgzIy-F01cTF18yJ6YrqFisOBQ/exec';
+
+let state = { clients: [], towns: [], records: [], history: [] };
+
+/* ---------- API helpers ---------- */
+async function apiGet(action, params){
+  const qs = new URLSearchParams({ action, ...(params||{}) });
+  const res = await fetch(API_URL + '?' + qs.toString());
+  const data = await res.json();
+  if(data && data.error) throw new Error(data.error);
+  return data;
+}
+async function apiPost(action, body){
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // avoids CORS preflight; Apps Script parses JSON regardless
+    body: JSON.stringify({ action, ...(body||{}) })
+  });
+  const data = await res.json();
+  if(data && data.error) throw new Error(data.error);
+  return data;
+}
+
+function chip(text){
+  const s = document.createElement('span');
+  s.textContent = text;
+  s.style.cssText = 'background:var(--periwinkle);color:var(--navy);padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600;';
+  return s;
+}
+
+function toast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = isError ? '#a1372b' : 'var(--navy)';
+  t.classList.add('show');
+  clearTimeout(toast._tm);
+  toast._tm = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function setLoading(on){
+  document.body.style.cursor = on ? 'progress' : 'default';
+}
+
+/* ---------- Load everything from the live Sheet ---------- */
+async function refreshAll(){
+  setLoading(true);
+  try{
+    const [clients, towns, toilets, history] = await Promise.all([
+      apiGet('getClients'),
+      apiGet('getTowns'),
+      apiGet('getToilets'),
+      apiGet('getHistory'),
+    ]);
+    state.clients = (clients||[]).filter(Boolean).sort();
+    state.towns = (towns||[]).filter(Boolean).sort();
+    state.records = (toilets||[]).map(r => ({
+      id: r['Toilet ID'], code: r['Code'], client: r['Client'], town: r['Town'],
+      location: r['Location'], placedDate: r['Placed Date'],
+      status: r['Status'], returnedDate: r['Returned Date']
+    }));
+    state.history = (history||[]).map(h => ({
+      id: h['History ID'], type: h['Type'], code: h['Code'], client: h['Client'],
+      town: h['Town'], at: h['Date']
+    }));
+  }catch(err){
+    toast('Could not reach the Sheet: ' + err.message, true);
+  }
+  setLoading(false);
+}
+
+/* ---------- Navigation ---------- */
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', async ()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('page-'+btn.dataset.page).classList.add('active');
+    await refreshAll();
+    if(btn.dataset.page==='out') renderOut();
+    if(btn.dataset.page==='history') renderHistory();
+    if(btn.dataset.page==='manage') renderManage();
+  });
+});
+
+/* ---------- Autocomplete ---------- */
+function setupAutocomplete(inputEl, listEl, getOptions, onAdd){
+  let hi = -1;
+  function render(query){
+    const q = query.trim().toLowerCase();
+    listEl.innerHTML = '';
+    let opts = getOptions();
+    let filtered = q ? opts.filter(o=>o.toLowerCase().includes(q)) : opts.slice(0,8);
+    filtered = filtered.slice(0,8);
+    hi = -1;
+    filtered.forEach(o=>{
+      const div = document.createElement('div');
+      div.className = 'opt';
+      div.textContent = o;
+      div.addEventListener('mousedown', (e)=>{ e.preventDefault(); inputEl.value = o; close(); });
+      listEl.appendChild(div);
+    });
+    if(q && !opts.some(o=>o.toLowerCase()===q)){
+      const div = document.createElement('div');
+      div.className = 'opt add-new';
+      div.innerHTML = '+ Add new &ldquo;'+query+'&rdquo; <span class="muted">creates it in the Sheet</span>';
+      div.addEventListener('mousedown', (e)=>{ e.preventDefault(); onAdd(query.trim()); inputEl.value = query.trim(); close(); });
+      listEl.appendChild(div);
+    }
+    if(filtered.length===0 && !q){
+      listEl.classList.remove('open'); return;
+    }
+    listEl.classList.add('open');
+  }
+  function close(){ listEl.classList.remove('open'); }
+  inputEl.addEventListener('input', ()=>render(inputEl.value));
+  inputEl.addEventListener('focus', ()=>render(inputEl.value));
+  inputEl.addEventListener('blur', ()=>setTimeout(close, 120));
+  inputEl.addEventListener('keydown', (e)=>{
+    const opts = Array.from(listEl.children);
+    if(e.key==='ArrowDown'){ e.preventDefault(); hi=Math.min(hi+1,opts.length-1); opts.forEach((o,i)=>o.classList.toggle('hi',i===hi)); }
+    if(e.key==='ArrowUp'){ e.preventDefault(); hi=Math.max(hi-1,0); opts.forEach((o,i)=>o.classList.toggle('hi',i===hi)); }
+    if(e.key==='Enter' && hi>=0 && opts[hi]){ e.preventDefault(); opts[hi].dispatchEvent(new Event('mousedown')); }
+    if(e.key==='Escape'){ close(); }
+  });
+}
+
+/* ---------- Add Toilet page ---------- */
+function initAddForm(){
+  setupAutocomplete(
+    document.getElementById('f-town'), document.getElementById('town-list'),
+    ()=>state.towns,
+    async (name)=>{
+      try{ await apiPost('addTown', {name}); state.towns.push(name); state.towns.sort(); toast('Added new town: '+name); }
+      catch(err){ toast('Could not add town: '+err.message, true); }
+    }
+  );
+  setupAutocomplete(
+    document.getElementById('f-client'), document.getElementById('client-list'),
+    ()=>state.clients,
+    async (name)=>{
+      try{ await apiPost('addClient', {name}); state.clients.push(name); state.clients.sort(); toast('Added new client: '+name); }
+      catch(err){ toast('Could not add client: '+err.message, true); }
+    }
+  );
+
+  document.getElementById('clear-form').addEventListener('click', ()=>{
+    ['f-code','f-date','f-town','f-client','f-location'].forEach(id=>document.getElementById(id).value='');
+  });
+
+  document.getElementById('submit-toilet').addEventListener('click', async ()=>{
+    const code = document.getElementById('f-code').value.trim();
+    const date = document.getElementById('f-date').value;
+    const town = document.getElementById('f-town').value.trim();
+    const client = document.getElementById('f-client').value.trim();
+    const location = document.getElementById('f-location').value.trim();
+    if(!code || !town || !client){ toast('Code, town and client are required', true); return; }
+    setLoading(true);
+    try{
+      await apiPost('addToilet', { code, client, town, location, placedDate: date||todayStr() });
+      toast('Toilet '+code+' added to the Sheet');
+      ['f-code','f-date','f-town','f-client','f-location'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('f-date').value = todayStr();
+      await refreshAll();
+    }catch(err){
+      toast('Could not add toilet: '+err.message, true);
+    }
+    setLoading(false);
+  });
+}
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+/* ---------- Currently Out page ---------- */
+function renderOut(){
+  const q = document.getElementById('out-search').value.trim().toLowerCase();
+  const tbody = document.getElementById('out-tbody');
+  tbody.innerHTML = '';
+  let rows = state.records.filter(r=>r.status==='out');
+  if(q){
+    rows = rows.filter(r => (r.code+' '+r.client+' '+r.town+' '+r.location).toLowerCase().includes(q));
+  }
+  document.getElementById('out-count').textContent = rows.length + ' shown';
+  document.getElementById('out-empty').style.display = rows.length? 'none':'block';
+
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="code">${r.code}</td>
+      <td>${r.client}</td>
+      <td>${r.town}</td>
+      <td>${r.location||''}</td>
+      <td>${r.placedDate||''}</td>
+      <td class="row-actions"><button class="btn btn-ghost btn-sm" data-id="${r.id}">Mark returned</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('button[data-id]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      setLoading(true);
+      try{
+        await apiPost('markReturned', { toiletId: b.dataset.id });
+        toast('Marked returned');
+        await refreshAll();
+        renderOut();
+      }catch(err){
+        toast('Could not update: '+err.message, true);
+      }
+      setLoading(false);
+    });
+  });
+
+  updateKpis();
+}
+
+function updateKpis(){
+  const out = state.records.filter(r=>r.status==='out');
+  document.getElementById('kpi-out').textContent = out.length;
+  document.getElementById('kpi-clients').textContent = new Set(out.map(r=>r.client)).size;
+  document.getElementById('kpi-towns').textContent = new Set(out.map(r=>r.town)).size;
+}
+
+document.getElementById('out-search').addEventListener('input', renderOut);
+
+/* ---------- History page ---------- */
+function renderHistory(){
+  const q = document.getElementById('hist-search').value.trim().toLowerCase();
+  const list = document.getElementById('hist-list');
+  list.innerHTML = '';
+  let items = state.history;
+  if(q){ items = items.filter(h => (h.code+' '+h.client+' '+h.town+' '+h.type).toLowerCase().includes(q)); }
+  document.getElementById('hist-empty').style.display = items.length? 'none':'block';
+  items.slice(0,300).forEach(h=>{
+    const div = document.createElement('div');
+    div.className = 'hist-item';
+    const label = h.type==='placed' ? 'placed at' : 'returned from';
+    div.innerHTML = `
+      <div class="idot ${h.type}"></div>
+      <div class="itxt">
+        <div><span class="code">${h.code}</span> ${label} <b>${h.client}</b> &middot; ${h.town}</div>
+        <div class="itime">${h.at}</div>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+document.getElementById('hist-search').addEventListener('input', renderHistory);
+
+/* ---------- Manage page ---------- */
+function renderManage(){
+  document.getElementById('client-total').textContent = state.clients.length;
+  document.getElementById('town-total').textContent = state.towns.length;
+  const cWrap = document.getElementById('client-chips'); cWrap.innerHTML='';
+  state.clients.forEach(c=>cWrap.appendChild(chip(c)));
+  const tWrap = document.getElementById('town-chips'); tWrap.innerHTML='';
+  state.towns.forEach(t=>tWrap.appendChild(chip(t)));
+}
+
+document.getElementById('add-client-btn').addEventListener('click', async ()=>{
+  const el = document.getElementById('new-client-name');
+  const v = el.value.trim();
+  if(!v) return;
+  setLoading(true);
+  try{
+    await apiPost('addClient', {name:v});
+    toast('Client added: '+v);
+    el.value='';
+    await refreshAll();
+    renderManage();
+  }catch(err){ toast('Could not add client: '+err.message, true); }
+  setLoading(false);
+});
+document.getElementById('add-town-btn').addEventListener('click', async ()=>{
+  const el = document.getElementById('new-town-name');
+  const v = el.value.trim();
+  if(!v) return;
+  setLoading(true);
+  try{
+    await apiPost('addTown', {name:v});
+    toast('Town added: '+v);
+    el.value='';
+    await refreshAll();
+    renderManage();
+  }catch(err){ toast('Could not add town: '+err.message, true); }
+  setLoading(false);
+});
+
+/* ---------- Init ---------- */
+(async function init(){
+  document.getElementById('f-date').value = todayStr();
+  initAddForm();
+  await refreshAll();
+  renderOut();
+})();
+</script>
+</body>
+</html>
