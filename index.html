@@ -152,6 +152,13 @@
   }
   .modal h2{ margin:0 0 4px; font-size:18px; color:var(--navy); }
   .modal .sub{ margin:0 0 18px; font-size:12.5px; color:var(--ink-soft); }
+
+  .chip-click{ cursor:pointer; transition:background .12s, transform .12s; }
+  .chip-click:hover{ background:var(--navy) !important; color:#fff !important; transform:translateY(-1px); }
+
+  .detail-modal{ width:640px; }
+  .detail-modal table{ margin-top:6px; }
+  .detail-empty{ padding:18px 0; color:var(--ink-soft); font-size:13px; }
 </style>
 </head>
 <body>
@@ -262,7 +269,7 @@
     <section class="page" id="page-manage">
       <div class="page-head">
         <h1>Clients, towns &amp; codes</h1>
-        <p>The master lists that power the search &amp; autocomplete everywhere else in the app.</p>
+        <p>The master lists that power the search &amp; autocomplete everywhere else in the app. Click any name below to see its toilets.</p>
       </div>
       <div class="card">
         <div class="form-grid cols-3">
@@ -343,6 +350,22 @@
   </div>
 </div>
 
+<!-- DETAIL MODAL (click a client/town/code chip) -->
+<div class="modal-backdrop" id="detail-backdrop">
+  <div class="modal detail-modal">
+    <h2 id="detail-title">Details</h2>
+    <p class="sub" id="detail-sub"></p>
+    <table>
+      <thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th>Status</th></tr></thead>
+      <tbody id="detail-tbody"></tbody>
+    </table>
+    <div class="detail-empty" id="detail-empty" style="display:none;">No toilet records found for this.</div>
+    <div class="form-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" id="detail-close">Close</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -370,12 +393,56 @@ async function apiPost(action, body){
   return data;
 }
 
-function chip(text){
+function chip(text, kind){
   const s = document.createElement('span');
   s.textContent = text;
   s.style.cssText = 'background:var(--periwinkle);color:var(--navy);padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600;';
+  if(kind){
+    s.classList.add('chip-click');
+    s.title = 'Click to see toilets for ' + text;
+    s.addEventListener('click', ()=> openDetailModal(kind, text));
+  }
   return s;
 }
+
+/* ---------- Detail modal (click a client/town/code chip) ---------- */
+function openDetailModal(kind, value){
+  const fieldMap = { client:'client', town:'town', code:'code' };
+  const field = fieldMap[kind];
+  const matches = state.records.filter(r => (r[field]||'') === value);
+
+  const titles = { client:'Client', town:'Town', code:'Toilet code' };
+  document.getElementById('detail-title').textContent = value;
+  document.getElementById('detail-sub').textContent =
+    titles[kind] + ' \u2014 ' + matches.length + ' toilet record' + (matches.length===1?'':'s') + ' found';
+
+  const tbody = document.getElementById('detail-tbody');
+  tbody.innerHTML = '';
+  matches.forEach(r=>{
+    const tr = document.createElement('tr');
+    const pillClass = r.status==='returned' ? 'pill-returned' : 'pill-out';
+    const pillLabel = r.status==='returned' ? 'Returned' : 'Out';
+    tr.innerHTML = `
+      <td class="code">${r.code}</td>
+      <td>${r.client}</td>
+      <td>${r.town}</td>
+      <td>${r.erf||''}</td>
+      <td>${r.street||''}</td>
+      <td>${r.placedDate||''}</td>
+      <td><span class="pill ${pillClass}">${pillLabel}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('detail-empty').style.display = matches.length ? 'none' : 'block';
+  document.getElementById('detail-backdrop').classList.add('open');
+}
+function closeDetailModal(){
+  document.getElementById('detail-backdrop').classList.remove('open');
+}
+document.getElementById('detail-close').addEventListener('click', closeDetailModal);
+document.getElementById('detail-backdrop').addEventListener('click', (e)=>{
+  if(e.target.id==='detail-backdrop') closeDetailModal();
+});
 
 function toast(msg, isError){
   const t = document.getElementById('toast');
@@ -693,11 +760,11 @@ function renderManage(){
   document.getElementById('town-total').textContent = state.towns.length;
   document.getElementById('code-total').textContent = state.codes.length;
   const cWrap = document.getElementById('client-chips'); cWrap.innerHTML='';
-  state.clients.forEach(c=>cWrap.appendChild(chip(c)));
+  state.clients.forEach(c=>cWrap.appendChild(chip(c, 'client')));
   const tWrap = document.getElementById('town-chips'); tWrap.innerHTML='';
-  state.towns.forEach(t=>tWrap.appendChild(chip(t)));
+  state.towns.forEach(t=>tWrap.appendChild(chip(t, 'town')));
   const kWrap = document.getElementById('code-chips'); kWrap.innerHTML='';
-  state.codes.forEach(k=>kWrap.appendChild(chip(k)));
+  state.codes.forEach(k=>kWrap.appendChild(chip(k, 'code')));
 }
 
 document.getElementById('add-client-btn').addEventListener('click', async ()=>{
