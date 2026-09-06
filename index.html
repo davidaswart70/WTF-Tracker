@@ -375,7 +375,7 @@
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbwOlBa-ssCfgg5UXqlNUmMir7eEIN8eNRh_EsPJEBvehgzIy-F01cTF18yJ6YrqFisOBQ/exec';
 
-let state = { clients: [], towns: [], codes: [], records: [], history: [] };
+let state = { clients: [], towns: [], codes: [], records: [], history: [], clientDetails: [] };
 let editingId = null;
 
 /* ---------- API helpers ---------- */
@@ -417,8 +417,19 @@ function openDetailModal(kind, value){
 
   const titles = { client:'Client', town:'Town', code:'Toilet code' };
   document.getElementById('detail-title').textContent = value;
-  document.getElementById('detail-sub').textContent =
-    titles[kind] + ' \u2014 ' + matches.length + ' toilet record' + (matches.length===1?'':'s') + ' found';
+
+  let subText = titles[kind] + ' \u2014 ' + matches.length + ' toilet record' + (matches.length===1?'':'s') + ' found';
+  if(kind==='client'){
+    const cd = state.clientDetails.find(c => c['Client Name'] === value);
+    const phone = cd && cd['Phone'] ? cd['Phone'] : '';
+    const email = cd && cd['Email'] ? cd['Email'] : '';
+    if(phone || email){
+      subText += '<br>' + [phone, email].filter(Boolean).join(' &middot; ');
+    } else {
+      subText += '<br><span style="color:var(--ink-soft);">No contact details on file</span>';
+    }
+  }
+  document.getElementById('detail-sub').innerHTML = subText;
 
   const tbody = document.getElementById('detail-tbody');
   tbody.innerHTML = '';
@@ -465,16 +476,18 @@ function setLoading(on){
 async function refreshAll(){
   setLoading(true);
   try{
-    const [clients, towns, codes, toilets, history] = await Promise.all([
+    const [clients, towns, codes, toilets, history, clientDetails] = await Promise.all([
       apiGet('getClients'),
       apiGet('getTowns'),
       apiGet('getCodes'),
       apiGet('getToilets'),
       apiGet('getHistory'),
+      apiGet('getClientDetails'),
     ]);
     state.clients = (clients||[]).filter(Boolean).sort();
     state.towns = (towns||[]).filter(Boolean).sort();
     state.codes = (codes||[]).filter(Boolean).sort();
+    state.clientDetails = clientDetails || [];
     state.records = (toilets||[]).map(r => ({
       id: r['Toilet ID'], code: r['Code'], client: r['Client'], town: r['Town'],
       erf: r['Erf'], street: r['Street'], placedDate: r['Placed Date'],
