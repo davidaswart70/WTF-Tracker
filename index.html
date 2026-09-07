@@ -111,7 +111,7 @@
   .row-actions{ display:flex; gap:6px; white-space:nowrap; }
   .empty{ padding:30px 10px; text-align:center; color:var(--ink-soft); }
 
-  .search-row{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr auto; gap:10px; margin-bottom:14px; align-items:end; }
+  .search-row{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:10px; margin-bottom:14px; align-items:end; }
   .search-row .field{ gap:4px; }
   .search-row label{ font-size:10.5px; }
   .search-row .count{ font-size:12.5px; color:var(--ink-soft); padding-bottom:9px; white-space:nowrap; }
@@ -161,6 +161,33 @@
   .detail-modal{ width:640px; }
   .detail-modal table{ margin-top:6px; }
   .detail-empty{ padding:18px 0; color:var(--ink-soft); font-size:13px; }
+
+  .input-warn{ border-color:#c23b3b !important; background:#fdeeee; }
+  .warn-text{ font-size:11.5px; color:#c23b3b; font-weight:600; margin-top:2px; display:none; }
+  .warn-text.show{ display:block; }
+
+  select.sort-select{
+    border:1.5px solid var(--line); border-radius:8px; padding:9px 11px; font-size:13.5px;
+    font-family:inherit; color:var(--ink); background:#fff; width:100%;
+  }
+
+  .print-header{ display:none; }
+
+  @media print{
+    body{ background:#fff; }
+    .sidebar, .kpis, .search-row, .toast, .page-head p, nav, .side-foot{ display:none !important; }
+    .card{ box-shadow:none; padding:0; }
+    main{ padding:0; max-width:100%; }
+    .print-header{ display:block; margin-bottom:14px; }
+    .print-header h1{ margin:0 0 2px; font-size:18px; color:#000; }
+    .print-header p{ margin:0; font-size:11px; color:#333; }
+    table{ font-size:11.5px; }
+    th{ color:#000; border-bottom:1.5px solid #000; }
+    td{ border-bottom:1px solid #999; }
+    .code{ color:#000; }
+    .row-actions, th:last-child, td:last-child{ display:none !important; }
+    .pill{ border:1px solid #000; background:#fff !important; color:#000 !important; }
+  }
 </style>
 </head>
 <body>
@@ -174,6 +201,7 @@
     <nav>
       <button class="nav-btn active" data-page="add"><span class="dot"></span> Add Toilet</button>
       <button class="nav-btn" data-page="out"><span class="dot"></span> Currently Out</button>
+      <button class="nav-btn" data-page="schedule"><span class="dot"></span> Delivery Schedule</button>
       <button class="nav-btn" data-page="history"><span class="dot"></span> History</button>
       <button class="nav-btn" data-page="manage"><span class="dot"></span> Clients, Towns &amp; Codes</button>
     </nav>
@@ -194,6 +222,7 @@
             <label>Toilet code</label>
             <input type="text" id="f-code" placeholder="Start typing, e.g. &quot;bpn&quot;..." autocomplete="off">
             <div class="autocomplete-list" id="code-list"></div>
+            <div class="warn-text" id="f-code-warn">This code is already listed as currently out.</div>
           </div>
           <div class="field">
             <label>Placed date</label>
@@ -231,6 +260,10 @@
         <h1>Currently out</h1>
         <p>Every toilet placed and not yet marked returned.</p>
       </div>
+      <div class="print-header">
+        <h1>Weskus Toilet Huur &mdash; Currently Out</h1>
+        <p id="print-date"></p>
+      </div>
       <div class="kpis">
         <div class="kpi"><div class="num" id="kpi-out">0</div><div class="lbl">Toilets out</div></div>
         <div class="kpi"><div class="num" id="kpi-clients">0</div><div class="lbl">Active clients</div></div>
@@ -242,13 +275,46 @@
           <div class="field"><label>Client</label><input type="text" id="s-client" placeholder="Filter client..."></div>
           <div class="field"><label>Town</label><input type="text" id="s-town" placeholder="Filter town..."></div>
           <div class="field"><label>Erf / Street</label><input type="text" id="s-loc" placeholder="Filter erf or street..."></div>
+          <div class="field">
+            <label>Sort by</label>
+            <select class="sort-select" id="s-sort">
+              <option value="client-asc">Client (A-Z)</option>
+              <option value="town-asc">Town (A-Z)</option>
+              <option value="date-desc">Placed date (newest)</option>
+              <option value="date-asc">Placed date (oldest)</option>
+            </select>
+          </div>
+        </div>
+        <div class="toolbar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <div class="count" id="out-count"></div>
+          <button class="btn btn-ghost btn-sm" id="print-out-btn">Print / Save as PDF</button>
         </div>
         <table>
-          <thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th></th></tr></thead>
+          <thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th>Scheduled return</th><th></th></tr></thead>
           <tbody id="out-tbody"></tbody>
         </table>
         <div class="empty" id="out-empty" style="display:none;">No toilets match those filters.</div>
+      </div>
+    </section>
+
+    <!-- DELIVERY SCHEDULE -->
+    <section class="page" id="page-schedule">
+      <div class="page-head">
+        <h1>Delivery schedule</h1>
+        <p>Toilets with a placed date falling in the range below &mdash; use this to plan upcoming deliveries.</p>
+      </div>
+      <div class="card">
+        <div class="search-row" style="grid-template-columns:1fr 1fr 1fr auto;">
+          <div class="field"><label>From</label><input type="date" id="sched-from"></div>
+          <div class="field"><label>To</label><input type="date" id="sched-to"></div>
+          <div class="field"><label>Town</label><input type="text" id="sched-town" placeholder="Filter town..."></div>
+          <div class="count" id="sched-count"></div>
+        </div>
+        <table>
+          <thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th>Status</th></tr></thead>
+          <tbody id="sched-tbody"></tbody>
+        </table>
+        <div class="empty" id="sched-empty" style="display:none;">No toilets scheduled in that range.</div>
       </div>
     </section>
 
@@ -345,6 +411,10 @@
       <div class="field">
         <label>Street / address</label>
         <input type="text" id="e-street">
+      </div>
+      <div class="field">
+        <label>Scheduled return date</label>
+        <input type="date" id="e-scheduled-return">
       </div>
       <div class="form-actions">
         <button class="btn btn-ghost" id="edit-cancel">Cancel</button>
@@ -491,7 +561,8 @@ async function refreshAll(){
     state.records = (toilets||[]).map(r => ({
       id: r['Toilet ID'], code: r['Code'], client: r['Client'], town: r['Town'],
       erf: r['Erf'], street: r['Street'], placedDate: r['Placed Date'],
-      status: r['Status'], returnedDate: r['Returned Date']
+      status: r['Status'], returnedDate: r['Returned Date'],
+      scheduledReturn: r['Scheduled Return Date'] || ''
     }));
     state.history = (history||[]).map(h => ({
       id: h['History ID'], type: h['Type'], code: h['Code'], client: h['Client'],
@@ -512,6 +583,7 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
     document.getElementById('page-'+btn.dataset.page).classList.add('active');
     await refreshAll();
     if(btn.dataset.page==='out') renderOut();
+    if(btn.dataset.page==='schedule') renderSchedule();
     if(btn.dataset.page==='history') renderHistory();
     if(btn.dataset.page==='manage') renderManage();
   });
@@ -588,7 +660,17 @@ function initAddForm(){
 
   document.getElementById('clear-form').addEventListener('click', ()=>{
     ['f-code','f-date','f-town','f-client','f-erf','f-street'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-code').classList.remove('input-warn');
+    document.getElementById('f-code-warn').classList.remove('show');
   });
+
+  document.getElementById('f-code').addEventListener('input', checkDuplicateCode);
+  function checkDuplicateCode(){
+    const val = document.getElementById('f-code').value.trim().toLowerCase();
+    const isDup = val && state.records.some(r => r.status==='out' && (r.code||'').toLowerCase()===val);
+    document.getElementById('f-code').classList.toggle('input-warn', isDup);
+    document.getElementById('f-code-warn').classList.toggle('show', isDup);
+  }
 
   document.getElementById('submit-toilet').addEventListener('click', async ()=>{
     const code = document.getElementById('f-code').value.trim();
@@ -603,6 +685,8 @@ function initAddForm(){
       await apiPost('addToilet', { code, client, town, erf, street, placedDate: date||todayStr() });
       toast('Toilet '+code+' added to the Sheet');
       ['f-code','f-date','f-town','f-client','f-erf','f-street'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('f-code').classList.remove('input-warn');
+      document.getElementById('f-code-warn').classList.remove('show');
       document.getElementById('f-date').value = todayStr();
       await refreshAll();
     }catch(err){
@@ -617,12 +701,13 @@ function todayStr(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
-/* ---------- Currently Out page (per-column search, AND logic) ---------- */
+/* ---------- Currently Out page (per-column search, AND logic, sortable) ---------- */
 function renderOut(){
   const qCode = document.getElementById('s-code').value.trim().toLowerCase();
   const qClient = document.getElementById('s-client').value.trim().toLowerCase();
   const qTown = document.getElementById('s-town').value.trim().toLowerCase();
   const qLoc = document.getElementById('s-loc').value.trim().toLowerCase();
+  const sortBy = document.getElementById('s-sort').value;
 
   const tbody = document.getElementById('out-tbody');
   tbody.innerHTML = '';
@@ -633,8 +718,17 @@ function renderOut(){
   if(qTown)   rows = rows.filter(r => (r.town||'').toLowerCase().includes(qTown));
   if(qLoc)    rows = rows.filter(r => ((r.erf||'')+' '+(r.street||'')).toLowerCase().includes(qLoc));
 
+  rows = rows.slice().sort((a,b)=>{
+    if(sortBy==='client-asc') return (a.client||'').localeCompare(b.client||'');
+    if(sortBy==='town-asc') return (a.town||'').localeCompare(b.town||'');
+    if(sortBy==='date-desc') return (b.placedDate||'').localeCompare(a.placedDate||'');
+    if(sortBy==='date-asc') return (a.placedDate||'').localeCompare(b.placedDate||'');
+    return 0;
+  });
+
   document.getElementById('out-count').textContent = rows.length + ' shown';
   document.getElementById('out-empty').style.display = rows.length? 'none':'block';
+  document.getElementById('print-date').textContent = 'As at ' + todayStr() + ' \u2014 ' + rows.length + ' toilets out';
 
   rows.forEach(r=>{
     const tr = document.createElement('tr');
@@ -645,6 +739,7 @@ function renderOut(){
       <td>${r.erf||''}</td>
       <td>${r.street||''}</td>
       <td>${r.placedDate||''}</td>
+      <td>${r.scheduledReturn||''}</td>
       <td class="row-actions">
         <button class="btn btn-ghost btn-sm" data-edit="${r.id}">Edit</button>
         <button class="btn btn-ghost btn-sm" data-return="${r.id}">Mark returned</button>
@@ -675,6 +770,8 @@ function renderOut(){
   updateKpis();
 }
 
+document.getElementById('print-out-btn').addEventListener('click', ()=> window.print());
+
 function updateKpis(){
   const out = state.records.filter(r=>r.status==='out');
   document.getElementById('kpi-out').textContent = out.length;
@@ -684,6 +781,46 @@ function updateKpis(){
 
 ['s-code','s-client','s-town','s-loc'].forEach(id=>{
   document.getElementById(id).addEventListener('input', renderOut);
+});
+document.getElementById('s-sort').addEventListener('change', renderOut);
+
+/* ---------- Delivery Schedule page ---------- */
+function renderSchedule(){
+  const from = document.getElementById('sched-from').value;
+  const to = document.getElementById('sched-to').value;
+  const qTown = document.getElementById('sched-town').value.trim().toLowerCase();
+
+  const tbody = document.getElementById('sched-tbody');
+  tbody.innerHTML = '';
+  let rows = state.records.filter(r=>r.placedDate);
+
+  if(from) rows = rows.filter(r => r.placedDate >= from);
+  if(to)   rows = rows.filter(r => r.placedDate <= to);
+  if(qTown) rows = rows.filter(r => (r.town||'').toLowerCase().includes(qTown));
+
+  rows = rows.slice().sort((a,b)=> (a.placedDate||'').localeCompare(b.placedDate||''));
+
+  document.getElementById('sched-count').textContent = rows.length + ' shown';
+  document.getElementById('sched-empty').style.display = rows.length? 'none':'block';
+
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    const pillClass = r.status==='returned' ? 'pill-returned' : 'pill-out';
+    const pillLabel = r.status==='returned' ? 'Returned' : 'Out';
+    tr.innerHTML = `
+      <td class="code">${r.code}</td>
+      <td>${r.client}</td>
+      <td>${r.town}</td>
+      <td>${r.erf||''}</td>
+      <td>${r.street||''}</td>
+      <td>${r.placedDate||''}</td>
+      <td><span class="pill ${pillClass}">${pillLabel}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+['sched-from','sched-to','sched-town'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', renderSchedule);
 });
 
 /* ---------- Edit modal ---------- */
@@ -716,9 +853,10 @@ function initEditModal(){
     const erf = document.getElementById('e-erf').value.trim();
     const street = document.getElementById('e-street').value.trim();
     const placedDate = document.getElementById('e-date').value;
+    const scheduledReturn = document.getElementById('e-scheduled-return').value;
     setLoading(true);
     try{
-      await apiPost('editToilet', { toiletId: editingId, code, town, client, erf, street, placedDate });
+      await apiPost('editToilet', { toiletId: editingId, code, town, client, erf, street, placedDate, scheduledReturn });
       toast('Changes saved');
       closeEditModal();
       await refreshAll();
@@ -740,6 +878,7 @@ function openEditModal(id){
   document.getElementById('e-erf').value = r.erf||'';
   document.getElementById('e-street').value = r.street||'';
   document.getElementById('e-date').value = r.placedDate||'';
+  document.getElementById('e-scheduled-return').value = r.scheduledReturn||'';
   document.getElementById('edit-backdrop').classList.add('open');
 }
 function closeEditModal(){
