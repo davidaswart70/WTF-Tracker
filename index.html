@@ -785,7 +785,7 @@ function initAddForm(){
     const client = document.getElementById('f-client').value.trim();
     const erf = document.getElementById('f-erf').value.trim();
     const street = document.getElementById('f-street').value.trim();
-    if(!code || !town || !client){ toast('Code, town and client are required', true); return; }
+    if(!town || !client){ toast('Town and client are required', true); return; }
     setLoading(true);
     try{
       await apiPost('addToilet', { code, client, town, erf, street, placedDate: date||todayStr() });
@@ -842,7 +842,7 @@ function renderOut(){
     tr.innerHTML = `
       <td><div class="code-cell">
         <button class="note-btn${r.note?' has-note':''}" data-note="${r.id}" title="${r.note?'Has a note':'Add a note'}">&#128221;</button>
-        <input type="text" class="row-input code-input" data-id="${r.id}" data-field="code" value="${r.code||''}">
+        <input type="text" class="row-input code-input${r.code?'':' input-warn'}" data-id="${r.id}" data-field="code" value="${r.code||''}" placeholder="${r.code?'':'Assign code...'}">
       </div></td>
       <td><input type="text" class="row-input" data-id="${r.id}" data-field="client" value="${r.client||''}"></td>
       <td><input type="text" class="row-input" data-id="${r.id}" data-field="town" value="${r.town||''}"></td>
@@ -870,6 +870,7 @@ function renderOut(){
         await apiPost('editToilet', payload);
         const rec = state.records.find(x=>x.id===id);
         if(rec) rec[field] = val;
+        if(field==='code') inp.classList.toggle('input-warn', !val);
         toast('Saved');
       }catch(err){
         toast('Could not save: '+err.message, true);
