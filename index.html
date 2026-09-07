@@ -101,7 +101,8 @@
   .form-actions{ grid-column:1/-1; display:flex; justify-content:flex-end; gap:10px; margin-top:4px; }
 
   table{ width:100%; border-collapse:collapse; font-size:13.5px; }
-  th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); padding:8px 8px; border-bottom:1.5px solid var(--line); }
+  .table-wrap{ overflow-x:auto; }
+  th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); padding:8px 8px; border-bottom:1.5px solid var(--line); white-space:nowrap; }
   td{ padding:10px 8px; border-bottom:1px solid #eef0f3; vertical-align:top; }
   tr:last-child td{ border-bottom:none; }
   .code{ font-family:'Space Grotesk'; font-weight:600; color:var(--navy); }
@@ -110,6 +111,14 @@
   .pill-returned{ background:var(--returned-bg); color:var(--returned); }
   .row-actions{ display:flex; gap:6px; white-space:nowrap; }
   .empty{ padding:30px 10px; text-align:center; color:var(--ink-soft); }
+
+  .sched-return-input{
+    border:1.5px solid var(--line); border-radius:6px; padding:5px 7px; font-size:12.5px;
+    font-family:inherit; width:128px; background:#fff; color:var(--ink);
+  }
+  .sched-return-input.has-value{ color:#c23b3b; font-weight:700; border-color:#e3b3b3; background:#fdf3f3; }
+  .sched-return-input:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(32,36,96,.12); }
+  .future-date{ color:#c23b3b; font-weight:700; }
 
   .search-row{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:10px; margin-bottom:14px; align-items:end; }
   .search-row .field{ gap:4px; }
@@ -289,10 +298,12 @@
           <div class="count" id="out-count"></div>
           <button class="btn btn-ghost btn-sm" id="print-out-btn">Print / Save as PDF</button>
         </div>
+        <div class="table-wrap">
         <table>
           <thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th>Scheduled return</th><th></th></tr></thead>
           <tbody id="out-tbody"></tbody>
         </table>
+        </div>
         <div class="empty" id="out-empty" style="display:none;">No toilets match those filters.</div>
       </div>
     </section>
@@ -310,10 +321,12 @@
           <div class="field"><label>Town</label><input type="text" id="sched-town" placeholder="Filter town..."></div>
           <div class="count" id="sched-count"></div>
         </div>
+        <div class="table-wrap">
         <table>
           <thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th>Status</th></tr></thead>
           <tbody id="sched-tbody"></tbody>
         </table>
+        </div>
         <div class="empty" id="sched-empty" style="display:none;">No toilets scheduled in that range.</div>
       </div>
     </section>
@@ -732,20 +745,37 @@ function renderOut(){
 
   rows.forEach(r=>{
     const tr = document.createElement('tr');
+    const isFuture = r.placedDate && r.placedDate > todayStr();
     tr.innerHTML = `
       <td class="code">${r.code}</td>
       <td>${r.client}</td>
       <td>${r.town}</td>
       <td>${r.erf||''}</td>
       <td>${r.street||''}</td>
-      <td>${r.placedDate||''}</td>
-      <td>${r.scheduledReturn||''}</td>
+      <td class="${isFuture?'future-date':''}">${r.placedDate||''}</td>
+      <td><input type="date" class="sched-return-input${r.scheduledReturn?' has-value':''}" data-id="${r.id}" value="${r.scheduledReturn||''}"></td>
       <td class="row-actions">
         <button class="btn btn-ghost btn-sm" data-edit="${r.id}">Edit</button>
         <button class="btn btn-ghost btn-sm" data-return="${r.id}">Mark returned</button>
       </td>
     `;
     tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('.sched-return-input').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const id = inp.dataset.id;
+      const val = inp.value;
+      inp.classList.toggle('has-value', !!val);
+      try{
+        await apiPost('editToilet', { toiletId: id, scheduledReturn: val });
+        const rec = state.records.find(x=>x.id===id);
+        if(rec) rec.scheduledReturn = val;
+        toast(val ? 'Scheduled return set' : 'Scheduled return cleared');
+      }catch(err){
+        toast('Could not save: '+err.message, true);
+      }
+    });
   });
 
   tbody.querySelectorAll('button[data-return]').forEach(b=>{
