@@ -119,6 +119,10 @@
 
   table{ width:100%; border-collapse:collapse; font-size:13.5px; table-layout:fixed; }
   .table-wrap{ overflow-x:auto; }
+  .table-wrap table td:first-child, .table-wrap table th:first-child{
+    position:sticky; left:0; background:#fff; z-index:5;
+    box-shadow:2px 0 4px rgba(20,24,60,.06);
+  }
   th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-soft); padding:8px 6px; border-bottom:1.5px solid var(--line); }
   td{ padding:10px 6px; border-bottom:1px solid #eef0f3; vertical-align:top; word-wrap:break-word; overflow-wrap:break-word; }
   tr:last-child td{ border-bottom:none; }
@@ -160,6 +164,15 @@
   .sched-return-input.has-value{ color:#c23b3b; font-weight:700; border-color:#e3b3b3; background:#fdf3f3; }
   .sched-return-input:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(32,36,96,.12); }
   .future-date{ color:#c23b3b; font-weight:700; }
+
+  .out-colgroup col:nth-child(1){ width:110px; }
+  .out-colgroup col:nth-child(2){ width:170px; }
+  .out-colgroup col:nth-child(3){ width:130px; }
+  .out-colgroup col:nth-child(4){ width:60px; }
+  .out-colgroup col:nth-child(5){ width:200px; }
+  .out-colgroup col:nth-child(6){ width:120px; }
+  .out-colgroup col:nth-child(7){ width:150px; }
+  .out-colgroup col:nth-child(8){ width:50px; }
 
   .search-row{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:10px; margin-bottom:14px; align-items:end; }
   .search-row .field{ gap:4px; }
@@ -244,7 +257,22 @@
     .nav-popup{ width:220px; }
     .modal{ width:94vw; padding:18px 16px; }
     .detail-modal{ width:94vw; }
-    table{ font-size:12.5px; }
+    table{ font-size:11px; }
+    .row-input{ font-size:11px; padding:4px 4px; }
+    .code{ font-size:11px; }
+    .note-btn{ width:17px; height:17px; font-size:9.5px; }
+    .return-btn{ width:22px; height:22px; font-size:12px; }
+    .sched-return-input{ font-size:10.5px; padding:4px 3px; }
+    th{ font-size:9.5px; padding:6px 3px; }
+    td{ padding:6px 3px; }
+    .out-colgroup col:nth-child(1){ width:92px; }
+    .out-colgroup col:nth-child(2){ width:78px; }
+    .out-colgroup col:nth-child(3){ width:62px; }
+    .out-colgroup col:nth-child(4){ width:32px; }
+    .out-colgroup col:nth-child(5){ width:88px; }
+    .out-colgroup col:nth-child(6){ width:76px; }
+    .out-colgroup col:nth-child(7){ width:80px; }
+    .out-colgroup col:nth-child(8){ width:32px; }
     .btn{ padding:11px 16px; }
     .undo-fab{ bottom:14px; right:14px; padding:11px 16px; }
   }
@@ -378,15 +406,8 @@
         </div>
         <div class="table-wrap">
         <table>
-          <colgroup>
-            <col style="width:110px">
-            <col style="width:170px">
-            <col style="width:130px">
-            <col style="width:60px">
-            <col style="width:200px">
-            <col style="width:120px">
-            <col style="width:150px">
-            <col style="width:50px">
+          <colgroup class="out-colgroup">
+            <col><col><col><col><col><col><col><col>
           </colgroup>
           <thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th>Scheduled return</th><th></th></tr></thead>
           <tbody id="out-tbody"></tbody>
@@ -560,6 +581,7 @@
       </div>
       <div class="form-actions">
         <button class="btn btn-primary btn-sm" id="detail-edit-save">Save changes</button>
+        <button class="btn btn-ghost btn-sm" id="detail-edit-delete" style="display:none; border-color:#c23b3b; color:#c23b3b;">Delete client</button>
       </div>
     </div>
     <table>
@@ -636,6 +658,7 @@ function openDetailModal(kind, value){
   document.getElementById('detail-title').textContent = value;
 
   const editFields = document.getElementById('detail-edit-fields');
+  const deleteBtn = document.getElementById('detail-edit-delete');
   if(kind==='client'){
     const cd = state.clientDetails.find(c => c['Client Name'] === value);
     const phone = cd && cd['Phone'] ? cd['Phone'] : '';
@@ -648,8 +671,11 @@ function openDetailModal(kind, value){
     editFields.dataset.originalPhone = phone;
     editFields.dataset.originalEmail = email;
     document.getElementById('detail-sub').textContent = matches.length + ' toilet record' + (matches.length===1?'':'s') + ' found';
+    const isActive = state.records.some(r => r.client === value && r.status === 'out');
+    deleteBtn.style.display = isActive ? 'none' : '';
   } else {
     editFields.style.display = 'none';
+    deleteBtn.style.display = 'none';
     document.getElementById('detail-sub').textContent =
       titles[kind] + ' \u2014 ' + matches.length + ' toilet record' + (matches.length===1?'':'s') + ' found';
   }
@@ -699,6 +725,27 @@ document.getElementById('detail-edit-save').addEventListener('click', async ()=>
     });
   }catch(err){
     toast('Could not update client: '+err.message, true);
+  }
+  setLoading(false);
+});
+document.getElementById('detail-edit-delete').addEventListener('click', async ()=>{
+  const editFields = document.getElementById('detail-edit-fields');
+  const name = editFields.dataset.originalName;
+  const phone = editFields.dataset.originalPhone;
+  const email = editFields.dataset.originalEmail;
+  if(!confirm('Remove "' + name + '" from your Clients list?\n\nThis only removes them from the list - it does not touch any toilet history.')) return;
+  setLoading(true);
+  try{
+    await apiPost('deleteClient', { name });
+    toast('Client removed: ' + name);
+    closeDetailModal();
+    await refreshAll();
+    renderCurrentPage();
+    setUndo('Re-add "' + name + '" to your Clients list', async ()=>{
+      await apiPost('addClient', { name, phone, email });
+    });
+  }catch(err){
+    toast('Could not remove client: '+err.message, true);
   }
   setLoading(false);
 });
