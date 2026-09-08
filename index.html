@@ -223,6 +223,32 @@
 
   .print-header{ display:none; }
 
+  .undo-fab{
+    all:unset; position:fixed; bottom:22px; right:22px; z-index:150;
+    background:var(--navy); color:#fff; padding:12px 20px; border-radius:99px;
+    font-weight:700; font-size:13.5px; box-shadow:0 4px 16px rgba(20,24,60,.28);
+    display:none; align-items:center; gap:6px; cursor:pointer;
+  }
+  .undo-fab.show{ display:inline-flex; }
+  .undo-fab:hover{ background:var(--navy-dark); }
+
+  @media (max-width: 760px){
+    main{ padding:16px 14px; }
+    .topbar{ padding:10px 12px; }
+    .brand .name{ font-size:13px; }
+    .topbar-current{ display:none; }
+    .card{ padding:16px 14px; }
+    .form-grid, .form-grid.cols-3{ grid-template-columns:1fr; }
+    .search-row{ grid-template-columns:1fr; }
+    .kpis{ grid-template-columns:1fr; }
+    .nav-popup{ width:220px; }
+    .modal{ width:94vw; padding:18px 16px; }
+    .detail-modal{ width:94vw; }
+    table{ font-size:12.5px; }
+    .btn{ padding:11px 16px; }
+    .undo-fab{ bottom:14px; right:14px; padding:11px 16px; }
+  }
+
   @media print{
     body{ background:#fff; }
     .topbar, .kpis, .search-row, .toast, .page-head p, nav, .side-foot{ display:none !important; }
@@ -519,6 +545,23 @@
   <div class="modal detail-modal">
     <h2 id="detail-title">Details</h2>
     <p class="sub" id="detail-sub"></p>
+    <div class="form-grid" id="detail-edit-fields" style="display:none; margin-bottom:16px;">
+      <div class="field full">
+        <label>Client name</label>
+        <input type="text" id="detail-edit-name">
+      </div>
+      <div class="field">
+        <label>Phone</label>
+        <input type="text" id="detail-edit-phone">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="text" id="detail-edit-email">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary btn-sm" id="detail-edit-save">Save changes</button>
+      </div>
+    </div>
     <table>
       <thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th>Status</th></tr></thead>
       <tbody id="detail-tbody"></tbody>
@@ -529,6 +572,20 @@
     </div>
   </div>
 </div>
+
+<!-- UNDO CONFIRM MODAL -->
+<div class="modal-backdrop" id="undo-backdrop">
+  <div class="modal" style="width:420px;">
+    <h2>Undo last change?</h2>
+    <p class="sub" id="undo-description"></p>
+    <div class="form-actions">
+      <button class="btn btn-ghost" id="undo-cancel">Cancel</button>
+      <button class="btn btn-primary" id="undo-confirm">Yes, undo it</button>
+    </div>
+  </div>
+</div>
+
+<button class="undo-fab" id="undo-btn" title="Undo last change">&#8630; Undo</button>
 
 <div class="toast" id="toast"></div>
 
@@ -578,18 +635,24 @@ function openDetailModal(kind, value){
   const titles = { client:'Client', town:'Town', code:'Toilet code' };
   document.getElementById('detail-title').textContent = value;
 
-  let subText = titles[kind] + ' \u2014 ' + matches.length + ' toilet record' + (matches.length===1?'':'s') + ' found';
+  const editFields = document.getElementById('detail-edit-fields');
   if(kind==='client'){
     const cd = state.clientDetails.find(c => c['Client Name'] === value);
     const phone = cd && cd['Phone'] ? cd['Phone'] : '';
     const email = cd && cd['Email'] ? cd['Email'] : '';
-    if(phone || email){
-      subText += '<br>' + [phone, email].filter(Boolean).join(' &middot; ');
-    } else {
-      subText += '<br><span style="color:var(--ink-soft);">No contact details on file</span>';
-    }
+    document.getElementById('detail-edit-name').value = value;
+    document.getElementById('detail-edit-phone').value = phone;
+    document.getElementById('detail-edit-email').value = email;
+    editFields.style.display = '';
+    editFields.dataset.originalName = value;
+    editFields.dataset.originalPhone = phone;
+    editFields.dataset.originalEmail = email;
+    document.getElementById('detail-sub').textContent = matches.length + ' toilet record' + (matches.length===1?'':'s') + ' found';
+  } else {
+    editFields.style.display = 'none';
+    document.getElementById('detail-sub').textContent =
+      titles[kind] + ' \u2014 ' + matches.length + ' toilet record' + (matches.length===1?'':'s') + ' found';
   }
-  document.getElementById('detail-sub').innerHTML = subText;
 
   const tbody = document.getElementById('detail-tbody');
   tbody.innerHTML = '';
@@ -615,6 +678,30 @@ function closeDetailModal(){
   document.getElementById('detail-backdrop').classList.remove('open');
 }
 document.getElementById('detail-close').addEventListener('click', closeDetailModal);
+document.getElementById('detail-edit-save').addEventListener('click', async ()=>{
+  const editFields = document.getElementById('detail-edit-fields');
+  const oldName = editFields.dataset.originalName;
+  const oldPhone = editFields.dataset.originalPhone;
+  const oldEmail = editFields.dataset.originalEmail;
+  const newName = document.getElementById('detail-edit-name').value.trim();
+  const newPhone = document.getElementById('detail-edit-phone').value.trim();
+  const newEmail = document.getElementById('detail-edit-email').value.trim();
+  if(!newName){ toast('Client name cannot be empty', true); return; }
+  setLoading(true);
+  try{
+    await apiPost('updateClient', { oldName, newName, phone: newPhone, email: newEmail });
+    toast('Client updated' + (newName!==oldName ? ' \u2014 renamed everywhere' : ''));
+    closeDetailModal();
+    await refreshAll();
+    renderCurrentPage();
+    setUndo('Revert client details back to "' + oldName + '"', async ()=>{
+      await apiPost('updateClient', { oldName: newName, newName: oldName, phone: oldPhone, email: oldEmail });
+    });
+  }catch(err){
+    toast('Could not update client: '+err.message, true);
+  }
+  setLoading(false);
+});
 document.getElementById('detail-backdrop').addEventListener('click', (e)=>{
   if(e.target.id==='detail-backdrop') closeDetailModal();
 });
@@ -630,6 +717,55 @@ function toast(msg, isError){
 
 function setLoading(on){
   document.body.style.cursor = on ? 'progress' : 'default';
+}
+
+/* ---------- Undo ---------- */
+let lastUndo = null; // { description, undoFn }
+
+function setUndo(description, undoFn){
+  lastUndo = { description, undoFn };
+  document.getElementById('undo-btn').classList.add('show');
+}
+function clearUndo(){
+  lastUndo = null;
+  document.getElementById('undo-btn').classList.remove('show');
+}
+
+document.getElementById('undo-btn').addEventListener('click', ()=>{
+  if(!lastUndo) return;
+  document.getElementById('undo-description').textContent = lastUndo.description;
+  document.getElementById('undo-backdrop').classList.add('open');
+});
+document.getElementById('undo-cancel').addEventListener('click', ()=>{
+  document.getElementById('undo-backdrop').classList.remove('open');
+});
+document.getElementById('undo-backdrop').addEventListener('click', (e)=>{
+  if(e.target.id==='undo-backdrop') document.getElementById('undo-backdrop').classList.remove('open');
+});
+document.getElementById('undo-confirm').addEventListener('click', async ()=>{
+  if(!lastUndo) return;
+  setLoading(true);
+  try{
+    await lastUndo.undoFn();
+    toast('Undone');
+    clearUndo();
+    document.getElementById('undo-backdrop').classList.remove('open');
+    await refreshAll();
+    renderCurrentPage();
+  }catch(err){
+    toast('Could not undo: '+err.message, true);
+  }
+  setLoading(false);
+});
+
+function renderCurrentPage(){
+  const activePage = document.querySelector('.page.active');
+  if(!activePage) return;
+  const id = activePage.id.replace('page-','');
+  if(id==='out') renderOut();
+  if(id==='schedule') renderSchedule();
+  if(id==='history') renderHistory();
+  if(id==='manage') renderManage();
 }
 
 /* ---------- Load everything from the live Sheet ---------- */
@@ -743,7 +879,10 @@ function initAddForm(){
     document.getElementById('f-code'), document.getElementById('code-list'),
     ()=>state.codes,
     async (name)=>{
-      try{ await apiPost('addCode', {name}); state.codes.push(name); state.codes.sort(); toast('Added new code: '+name); }
+      try{
+        await apiPost('addCode', {name}); state.codes.push(name); state.codes.sort(); toast('Added new code: '+name);
+        setUndo('Remove the new code "'+name+'" you just created', async ()=>{ await apiPost('deleteCode', {name}); });
+      }
       catch(err){ toast('Could not add code: '+err.message, true); }
     }
   );
@@ -751,7 +890,10 @@ function initAddForm(){
     document.getElementById('f-town'), document.getElementById('town-list'),
     ()=>state.towns,
     async (name)=>{
-      try{ await apiPost('addTown', {name}); state.towns.push(name); state.towns.sort(); toast('Added new town: '+name); }
+      try{
+        await apiPost('addTown', {name}); state.towns.push(name); state.towns.sort(); toast('Added new town: '+name);
+        setUndo('Remove the new town "'+name+'" you just created', async ()=>{ await apiPost('deleteTown', {name}); });
+      }
       catch(err){ toast('Could not add town: '+err.message, true); }
     }
   );
@@ -759,7 +901,10 @@ function initAddForm(){
     document.getElementById('f-client'), document.getElementById('client-list'),
     ()=>state.clients,
     async (name)=>{
-      try{ await apiPost('addClient', {name}); state.clients.push(name); state.clients.sort(); toast('Added new client: '+name); }
+      try{
+        await apiPost('addClient', {name}); state.clients.push(name); state.clients.sort(); toast('Added new client: '+name);
+        setUndo('Remove the new client "'+name+'" you just created', async ()=>{ await apiPost('deleteClient', {name}); });
+      }
       catch(err){ toast('Could not add client: '+err.message, true); }
     }
   );
@@ -788,13 +933,18 @@ function initAddForm(){
     if(!town || !client){ toast('Town and client are required', true); return; }
     setLoading(true);
     try{
-      await apiPost('addToilet', { code, client, town, erf, street, placedDate: date||todayStr() });
+      const res = await apiPost('addToilet', { code, client, town, erf, street, placedDate: date||todayStr() });
       toast('Toilet '+code+' added to the Sheet');
       ['f-code','f-date','f-town','f-client','f-erf','f-street'].forEach(id=>document.getElementById(id).value='');
       document.getElementById('f-code').classList.remove('input-warn');
       document.getElementById('f-code-warn').classList.remove('show');
       document.getElementById('f-date').value = todayStr();
       await refreshAll();
+      if(res && res.toiletId){
+        setUndo('Remove the toilet you just added (' + (code||'no code') + ' - ' + client + ')', async ()=>{
+          await apiPost('deleteToilet', { toiletId: res.toiletId });
+        });
+      }
     }catch(err){
       toast('Could not add toilet: '+err.message, true);
     }
@@ -860,10 +1010,12 @@ function renderOut(){
   });
 
   tbody.querySelectorAll('input.row-input').forEach(inp=>{
+    inp.addEventListener('focus', ()=>{ inp.dataset.prevValue = inp.value; });
     inp.addEventListener('change', async ()=>{
       const id = inp.dataset.id;
       const field = inp.dataset.field;
       const val = inp.value.trim();
+      const prevValue = inp.dataset.prevValue !== undefined ? inp.dataset.prevValue : val;
       const payload = { toiletId: id };
       payload[field] = val;
       try{
@@ -872,6 +1024,12 @@ function renderOut(){
         if(rec) rec[field] = val;
         if(field==='code') inp.classList.toggle('input-warn', !val);
         toast('Saved');
+        if(prevValue !== val){
+          setUndo('Change ' + field + ' back to "' + (prevValue||'(empty)') + '"', async ()=>{
+            const revert = { toiletId: id }; revert[field] = prevValue;
+            await apiPost('editToilet', revert);
+          });
+        }
       }catch(err){
         toast('Could not save: '+err.message, true);
       }
@@ -879,15 +1037,22 @@ function renderOut(){
   });
 
   tbody.querySelectorAll('.sched-return-input').forEach(inp=>{
+    inp.addEventListener('focus', ()=>{ inp.dataset.prevValue = inp.value; });
     inp.addEventListener('change', async ()=>{
       const id = inp.dataset.id;
       const val = inp.value;
+      const prevValue = inp.dataset.prevValue !== undefined ? inp.dataset.prevValue : val;
       inp.classList.toggle('has-value', !!val);
       try{
         await apiPost('editToilet', { toiletId: id, scheduledReturn: val });
         const rec = state.records.find(x=>x.id===id);
         if(rec) rec.scheduledReturn = val;
         toast(val ? 'Scheduled return set' : 'Scheduled return cleared');
+        if(prevValue !== val){
+          setUndo('Change scheduled return back to "' + (prevValue||'(empty)') + '"', async ()=>{
+            await apiPost('editToilet', { toiletId: id, scheduledReturn: prevValue });
+          });
+        }
       }catch(err){
         toast('Could not save: '+err.message, true);
       }
@@ -897,11 +1062,16 @@ function renderOut(){
   tbody.querySelectorAll('button[data-return]').forEach(b=>{
     b.addEventListener('click', async ()=>{
       setLoading(true);
+      const id = b.dataset.return;
+      const rec = state.records.find(x=>x.id===id);
       try{
-        await apiPost('markReturned', { toiletId: b.dataset.return });
+        await apiPost('markReturned', { toiletId: id });
         toast('Marked returned');
         await refreshAll();
         renderOut();
+        setUndo('Mark ' + (rec?rec.code:'this toilet') + ' as out again (undo return)', async ()=>{
+          await apiPost('unmarkReturned', { toiletId: id });
+        });
       }catch(err){
         toast('Could not update: '+err.message, true);
       }
@@ -1030,10 +1200,12 @@ function closeEditModal(){
 
 /* ---------- Note modal ---------- */
 let noteEditingId = null;
+let noteEditingPrev = '';
 function openNoteModal(id){
   const r = state.records.find(x=>x.id===id);
   if(!r) return;
   noteEditingId = id;
+  noteEditingPrev = r.note || '';
   document.getElementById('note-title').textContent = r.code;
   document.getElementById('note-sub').textContent = r.client + ' \u2014 ' + r.town;
   document.getElementById('note-text').value = r.note || '';
@@ -1049,14 +1221,21 @@ document.getElementById('note-backdrop').addEventListener('click', (e)=>{
 });
 document.getElementById('note-save').addEventListener('click', async ()=>{
   const note = document.getElementById('note-text').value.trim();
+  const id = noteEditingId;
+  const prevNote = noteEditingPrev;
   setLoading(true);
   try{
-    await apiPost('editToilet', { toiletId: noteEditingId, note });
-    const rec = state.records.find(x=>x.id===noteEditingId);
+    await apiPost('editToilet', { toiletId: id, note });
+    const rec = state.records.find(x=>x.id===id);
     if(rec) rec.note = note;
     toast(note ? 'Note saved' : 'Note cleared');
     closeNoteModal();
     renderOut();
+    if(prevNote !== note){
+      setUndo('Restore the previous note', async ()=>{
+        await apiPost('editToilet', { toiletId: id, note: prevNote });
+      });
+    }
   }catch(err){
     toast('Could not save note: '+err.message, true);
   }
@@ -1126,6 +1305,7 @@ document.getElementById('add-client-btn').addEventListener('click', async ()=>{
     el.value='';
     await refreshAll();
     renderManage();
+    setUndo('Remove the new client "'+v+'" you just added', async ()=>{ await apiPost('deleteClient', {name:v}); });
   }catch(err){ toast('Could not add client: '+err.message, true); }
   setLoading(false);
 });
@@ -1140,6 +1320,7 @@ document.getElementById('add-town-btn').addEventListener('click', async ()=>{
     el.value='';
     await refreshAll();
     renderManage();
+    setUndo('Remove the new town "'+v+'" you just added', async ()=>{ await apiPost('deleteTown', {name:v}); });
   }catch(err){ toast('Could not add town: '+err.message, true); }
   setLoading(false);
 });
@@ -1154,6 +1335,7 @@ document.getElementById('add-code-btn').addEventListener('click', async ()=>{
     el.value='';
     await refreshAll();
     renderManage();
+    setUndo('Remove the new code "'+v+'" you just added', async ()=>{ await apiPost('deleteCode', {name:v}); });
   }catch(err){ toast('Could not add code: '+err.message, true); }
   setLoading(false);
 });
