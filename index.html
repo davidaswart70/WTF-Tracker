@@ -153,8 +153,8 @@
     background:var(--periwinkle); color:var(--ink-soft); border:1px solid var(--line);
   }
   .note-btn:hover{ background:var(--navy); color:#fff; border-color:var(--navy); }
-  .note-btn.has-note{ background:#fbe4e4; color:#c23b3b; border-color:#e3b3b3; font-weight:700; }
-  .note-btn.has-note:hover{ background:#c23b3b; color:#fff; }
+  .note-btn.has-note{ background:#c23b3b; color:#fff; border-color:#c23b3b; font-weight:700; }
+  .note-btn.has-note:hover{ background:#a1302f; }
   .return-btn{
     all:unset; cursor:pointer; width:26px; height:26px; border-radius:6px; flex-shrink:0;
     display:inline-flex; align-items:center; justify-content:center; font-size:14px;
@@ -342,6 +342,8 @@
     .pill{ border:1px solid #000; background:#fff !important; color:#000 !important; }
   }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -465,7 +467,7 @@
         </div>
         <div class="toolbar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <div class="count" id="out-count"></div>
-          <button class="btn btn-ghost btn-sm" id="print-out-btn">Print / Save as PDF</button>
+          <button class="btn btn-ghost btn-sm" id="print-out-btn">Download PDF report</button>
         </div>
         <div class="table-wrap">
         <table>
@@ -1215,7 +1217,112 @@ function renderOut(){
   updateKpis();
 }
 
-document.getElementById('print-out-btn').addEventListener('click', ()=> window.print());
+document.getElementById('print-out-btn').addEventListener('click', ()=> generateOutPDF());
+
+function generateOutPDF(){
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    toast('PDF library failed to load - check your internet connection and try again', true);
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+  if(typeof doc.autoTable !== 'function'){
+    toast('PDF table plugin failed to load - check your internet connection and try again', true);
+    return;
+  }
+
+  const qCode = document.getElementById('s-code').value.trim().toLowerCase();
+  const qClient = document.getElementById('s-client').value.trim().toLowerCase();
+  const qTown = document.getElementById('s-town').value.trim().toLowerCase();
+  const qLoc = document.getElementById('s-loc').value.trim().toLowerCase();
+  const sortBy = document.getElementById('s-sort').value;
+
+  let rows = state.records.filter(r=>r.status==='out');
+  if(qCode)   rows = rows.filter(r => (r.code||'').toLowerCase().includes(qCode));
+  if(qClient) rows = rows.filter(r => (r.client||'').toLowerCase().includes(qClient));
+  if(qTown)   rows = rows.filter(r => (r.town||'').toLowerCase().includes(qTown));
+  if(qLoc)    rows = rows.filter(r => ((r.erf||'')+' '+(r.street||'')).toLowerCase().includes(qLoc));
+  rows = rows.slice().sort((a,b)=>{
+    if(sortBy==='client-asc') return (a.client||'').localeCompare(b.client||'');
+    if(sortBy==='town-asc') return (a.town||'').localeCompare(b.town||'');
+    if(sortBy==='date-desc') return (b.placedDate||'').localeCompare(a.placedDate||'');
+    if(sortBy==='date-asc') return (a.placedDate||'').localeCompare(b.placedDate||'');
+    return 0;
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const margin = 30;
+
+  // Letterhead
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(32, 36, 96); // navy
+  doc.text('Weskus Toilet Huur BK', margin, 34);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(60, 60, 60);
+  doc.text('Currently Out \u2014 Toilet Placement Report', margin, 52);
+
+  doc.setFontSize(9);
+  doc.setTextColor(100, 100, 100);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-ZA', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const timeStr = now.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' });
+  doc.text('Generated ' + dateStr + ' at ' + timeStr + '   \u00b7   ' + rows.length + ' toilet' + (rows.length===1?'':'s') + ' currently out', margin, 66);
+
+  // thin rule under letterhead
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.5);
+  doc.line(margin, 74, pageWidth - margin, 74);
+
+  const body = rows.map(r => [
+    r.code || '\u2014',
+    r.client || '',
+    r.town || '',
+    r.erf || '',
+    r.street || '',
+    r.placedDate || '',
+    r.scheduledReturn || ''
+  ]);
+
+  doc.autoTable({
+    startY: 84,
+    margin: { left: margin, right: margin },
+    head: [['Code', 'Client', 'Town', 'Erf', 'Street', 'Placed', 'Scheduled Return']],
+    body: body,
+    theme: 'grid',
+    styles: {
+      font: 'helvetica', fontSize: 9, cellPadding: 5,
+      lineColor: [180, 180, 180], lineWidth: 0.5,
+      textColor: [20, 20, 20],
+    },
+    headStyles: {
+      fillColor: [255, 255, 255], textColor: [20, 20, 20], fontStyle: 'bold',
+      lineColor: [20, 20, 20], lineWidth: 0.75,
+    },
+    alternateRowStyles: { fillColor: [248, 248, 248] }, // very light, ink-friendly
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 70 },
+      3: { cellWidth: 45 },
+      5: { cellWidth: 65 },
+      6: { cellWidth: 85 },
+    },
+    didDrawPage: function(data){
+      const pageCount = doc.internal.getNumberOfPages();
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(140, 140, 140);
+      doc.text(
+        'Page ' + doc.internal.getCurrentPageInfo().pageNumber + ' of ' + pageCount,
+        pageWidth - margin, doc.internal.pageSize.getHeight() - 16, { align: 'right' }
+      );
+      doc.text('Weskus Toilet Tracker', margin, doc.internal.pageSize.getHeight() - 16);
+    }
+  });
+
+  doc.save('Weskus-Currently-Out-' + now.toISOString().slice(0,10) + '.pdf');
+}
 
 function updateKpis(){
   const out = state.records.filter(r=>r.status==='out');
