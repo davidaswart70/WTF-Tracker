@@ -31,6 +31,24 @@
 
   .app{ min-height:100vh; }
 
+  .password-gate{
+    position:fixed; inset:0; background:var(--navy); z-index:1000;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .password-gate.unlocked{ display:none; }
+  .password-box{
+    background:#fff; border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:32px 28px; width:340px; max-width:100%;
+  }
+  .password-box label{ display:block; margin-bottom:8px; }
+  .password-box input{
+    width:100%; border:1.5px solid var(--line); border-radius:8px; padding:11px 12px;
+    font-size:20px; letter-spacing:4px; text-align:center; font-family:inherit; color:var(--ink);
+  }
+  .password-box input:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(32,36,96,.12); }
+  .password-error{ font-size:12.5px; color:#c23b3b; font-weight:600; margin-top:8px; display:none; text-align:center; }
+  .password-error.show{ display:block; }
+
   .topbar{
     background:var(--navy); color:#fff; display:flex; align-items:center; gap:14px;
     padding:12px 20px; position:sticky; top:0; z-index:50;
@@ -326,6 +344,20 @@
 </style>
 </head>
 <body>
+
+<!-- PASSWORD GATE -->
+<div class="password-gate" id="password-gate">
+  <div class="password-box">
+    <div class="brand" style="justify-content:center; margin-bottom:18px;">
+      <div class="mark">W</div>
+      <div class="name" style="text-align:left;">Weskus<span>TOILET TRACKER</span></div>
+    </div>
+    <label for="password-input">Enter password to continue</label>
+    <input type="password" id="password-input" autocomplete="off" inputmode="numeric">
+    <div class="password-error" id="password-error">Incorrect password, try again.</div>
+    <button class="btn btn-primary" id="password-submit" style="width:100%; justify-content:center; margin-top:12px;">Unlock</button>
+  </div>
+</div>
 
 <div class="app">
   <div class="topbar">
@@ -643,6 +675,29 @@
 <div class="toast" id="toast"></div>
 
 <script>
+/* ---------- Password gate - asks every time, nothing is remembered between visits ---------- */
+const APP_PASSWORD = '0303';
+(function initPasswordGate(){
+  const gate = document.getElementById('password-gate');
+  const input = document.getElementById('password-input');
+  const error = document.getElementById('password-error');
+  const submitBtn = document.getElementById('password-submit');
+
+  function tryUnlock(){
+    if(input.value === APP_PASSWORD){
+      gate.classList.add('unlocked');
+      error.classList.remove('show');
+    } else {
+      error.classList.add('show');
+      input.value = '';
+      input.focus();
+    }
+  }
+  submitBtn.addEventListener('click', tryUnlock);
+  input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') tryUnlock(); });
+  setTimeout(()=>input.focus(), 200);
+})();
+
 const API_URL = 'https://script.google.com/macros/s/AKfycbwOlBa-ssCfgg5UXqlNUmMir7eEIN8eNRh_EsPJEBvehgzIy-F01cTF18yJ6YrqFisOBQ/exec';
 
 let state = { clients: [], towns: [], codes: [], records: [], history: [], clientDetails: [] };
