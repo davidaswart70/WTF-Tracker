@@ -1354,7 +1354,7 @@ function setupFilterAutocomplete(inputEl, listEl, getOptions, onSelect){
     const q = query.trim().toLowerCase();
     listEl.innerHTML = '';
     let opts = getOptions();
-    let filtered = q ? opts.filter(o=>o && o.toLowerCase().includes(q)) : [];
+    let filtered = q ? opts.filter(o=>o && String(o).toLowerCase().includes(q)) : [];
     filtered = filtered.slice(0,8);
     hi = -1;
     filtered.forEach(o=>{
@@ -1396,7 +1396,7 @@ function initOutFilters(){
     document.getElementById('s-loc'), document.getElementById('s-loc-list'),
     ()=>{
       const set = new Set();
-      state.records.forEach(r=>{ if(r.erf) set.add(r.erf); if(r.street) set.add(r.street); });
+      state.records.forEach(r=>{ if(r.erf) set.add(String(r.erf)); if(r.street) set.add(String(r.street)); });
       return Array.from(set);
     }, renderOut
   );
