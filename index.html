@@ -1395,9 +1395,8 @@ function initOutFilters(){
   setupFilterAutocomplete(
     document.getElementById('s-loc'), document.getElementById('s-loc-list'),
     ()=>{
-      const out = state.records.filter(r=>r.status==='out');
       const set = new Set();
-      out.forEach(r=>{ if(r.erf) set.add(r.erf); if(r.street) set.add(r.street); });
+      state.records.forEach(r=>{ if(r.erf) set.add(r.erf); if(r.street) set.add(r.street); });
       return Array.from(set);
     }, renderOut
   );
