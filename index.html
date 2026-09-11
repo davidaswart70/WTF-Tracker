@@ -451,10 +451,10 @@
       </div>
       <div class="card">
         <div class="search-row">
-          <div class="field"><label>Code</label><input type="text" id="s-code" placeholder="Filter code..."></div>
-          <div class="field"><label>Client</label><input type="text" id="s-client" placeholder="Filter client..."></div>
-          <div class="field"><label>Town</label><input type="text" id="s-town" placeholder="Filter town..."></div>
-          <div class="field"><label>Erf / Street</label><input type="text" id="s-loc" placeholder="Filter erf or street..."></div>
+          <div class="field"><label>Code</label><input type="text" id="s-code" placeholder="Filter code..." autocomplete="off"><div class="autocomplete-list" id="s-code-list"></div></div>
+          <div class="field"><label>Client</label><input type="text" id="s-client" placeholder="Filter client..." autocomplete="off"><div class="autocomplete-list" id="s-client-list"></div></div>
+          <div class="field"><label>Town</label><input type="text" id="s-town" placeholder="Filter town..." autocomplete="off"><div class="autocomplete-list" id="s-town-list"></div></div>
+          <div class="field"><label>Erf / Street</label><input type="text" id="s-loc" placeholder="Filter erf or street..." autocomplete="off"><div class="autocomplete-list" id="s-loc-list"></div></div>
           <div class="field">
             <label>Sort by</label>
             <select class="sort-select" id="s-sort">
@@ -607,6 +607,22 @@
         <button class="btn btn-ghost" id="edit-cancel">Cancel</button>
         <button class="btn btn-primary" id="edit-save">Save changes</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW CLIENT PHONE MODAL (shown after "+ Add new" a client in Add Toilet) -->
+<div class="modal-backdrop" id="newclient-backdrop">
+  <div class="modal" style="width:400px;">
+    <h2>Add "<span id="newclient-name"></span>"</h2>
+    <p class="sub">Phone number is optional - you can confirm without one.</p>
+    <div class="field full">
+      <label>Phone number</label>
+      <input type="text" id="newclient-phone" placeholder="e.g. 082 123 4567">
+    </div>
+    <div class="form-actions" style="margin-top:14px;">
+      <button class="btn btn-ghost" id="newclient-cancel">Cancel</button>
+      <button class="btn btn-primary" id="newclient-confirm">Confirm</button>
     </div>
   </div>
 </div>
@@ -1035,13 +1051,7 @@ function initAddForm(){
   setupAutocomplete(
     document.getElementById('f-client'), document.getElementById('client-list'),
     ()=>state.clients,
-    async (name)=>{
-      try{
-        await apiPost('addClient', {name}); state.clients.push(name); state.clients.sort(); toast('Added new client: '+name);
-        setUndo('Remove the new client "'+name+'" you just created', async ()=>{ await apiPost('deleteClient', {name}); });
-      }
-      catch(err){ toast('Could not add client: '+err.message, true); }
-    }
+    (name)=>{ openNewClientModal(name); }
   );
 
   document.getElementById('clear-form').addEventListener('click', ()=>{
@@ -1276,20 +1286,25 @@ function generateOutPDF(){
   doc.setLineWidth(0.5);
   doc.line(margin, 74, pageWidth - margin, 74);
 
-  const body = rows.map(r => [
-    r.code || '\u2014',
-    r.client || '',
-    r.town || '',
-    r.erf || '',
-    r.street || '',
-    r.placedDate || '',
-    r.scheduledReturn || ''
-  ]);
+  const body = rows.map(r => {
+    const cd = state.clientDetails.find(c => c['Client Name'] === r.client);
+    const phone = cd && cd['Phone'] ? cd['Phone'] : '';
+    return [
+      r.code || '\u2014',
+      r.client || '',
+      phone,
+      r.town || '',
+      r.erf || '',
+      r.street || '',
+      r.placedDate || '',
+      r.note || ''
+    ];
+  });
 
   doc.autoTable({
     startY: 84,
     margin: { left: margin, right: margin },
-    head: [['Code', 'Client', 'Town', 'Erf', 'Street', 'Placed', 'Scheduled Return']],
+    head: [['Code', 'Client', 'Phone', 'Town', 'Erf', 'Street', 'Placed', 'Note']],
     body: body,
     theme: 'grid',
     styles: {
@@ -1303,10 +1318,11 @@ function generateOutPDF(){
     },
     alternateRowStyles: { fillColor: [248, 248, 248] }, // very light, ink-friendly
     columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 70 },
-      3: { cellWidth: 45 },
-      5: { cellWidth: 65 },
-      6: { cellWidth: 85 },
+      0: { fontStyle: 'bold', cellWidth: 62 },
+      2: { cellWidth: 72 },
+      4: { cellWidth: 40 },
+      6: { cellWidth: 58 },
+      7: { cellWidth: 130 },
     },
     didDrawPage: function(data){
       const pageCount = doc.internal.getNumberOfPages();
@@ -1331,9 +1347,62 @@ function updateKpis(){
   document.getElementById('kpi-towns').textContent = new Set(out.map(r=>r.town)).size;
 }
 
-['s-code','s-client','s-town','s-loc'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', renderOut);
-});
+/* ---------- Filter autocomplete (search boxes) - pick a suggestion, it fills in and re-filters immediately ---------- */
+function setupFilterAutocomplete(inputEl, listEl, getOptions, onSelect){
+  let hi = -1;
+  function render(query){
+    const q = query.trim().toLowerCase();
+    listEl.innerHTML = '';
+    let opts = getOptions();
+    let filtered = q ? opts.filter(o=>o && o.toLowerCase().includes(q)) : [];
+    filtered = filtered.slice(0,8);
+    hi = -1;
+    filtered.forEach(o=>{
+      const div = document.createElement('div');
+      div.className = 'opt';
+      div.textContent = o;
+      div.addEventListener('mousedown', (e)=>{ e.preventDefault(); inputEl.value = o; close(); onSelect(); });
+      listEl.appendChild(div);
+    });
+    listEl.classList.toggle('open', filtered.length > 0);
+  }
+  function close(){ listEl.classList.remove('open'); }
+  inputEl.addEventListener('input', ()=>{ render(inputEl.value); onSelect(); });
+  inputEl.addEventListener('focus', ()=>render(inputEl.value));
+  inputEl.addEventListener('blur', ()=>setTimeout(close, 120));
+  inputEl.addEventListener('keydown', (e)=>{
+    const opts = Array.from(listEl.children);
+    if(e.key==='ArrowDown'){ e.preventDefault(); hi=Math.min(hi+1,opts.length-1); opts.forEach((o,i)=>o.classList.toggle('hi',i===hi)); }
+    if(e.key==='ArrowUp'){ e.preventDefault(); hi=Math.max(hi-1,0); opts.forEach((o,i)=>o.classList.toggle('hi',i===hi)); }
+    if(e.key==='Enter' && hi>=0 && opts[hi]){ e.preventDefault(); opts[hi].dispatchEvent(new Event('mousedown')); }
+    if(e.key==='Escape'){ close(); }
+  });
+}
+
+function initOutFilters(){
+  setupFilterAutocomplete(
+    document.getElementById('s-code'), document.getElementById('s-code-list'),
+    ()=>state.codes, renderOut
+  );
+  setupFilterAutocomplete(
+    document.getElementById('s-client'), document.getElementById('s-client-list'),
+    ()=>state.clients, renderOut
+  );
+  setupFilterAutocomplete(
+    document.getElementById('s-town'), document.getElementById('s-town-list'),
+    ()=>state.towns, renderOut
+  );
+  setupFilterAutocomplete(
+    document.getElementById('s-loc'), document.getElementById('s-loc-list'),
+    ()=>{
+      const out = state.records.filter(r=>r.status==='out');
+      const set = new Set();
+      out.forEach(r=>{ if(r.erf) set.add(r.erf); if(r.street) set.add(r.street); });
+      return Array.from(set);
+    }, renderOut
+  );
+}
+initOutFilters();
 document.getElementById('s-sort').addEventListener('change', renderOut);
 
 /* ---------- Delivery Schedule page ---------- */
@@ -1441,6 +1510,40 @@ function closeEditModal(){
 /* ---------- Note modal ---------- */
 let noteEditingId = null;
 let noteEditingPrev = '';
+/* ---------- New client phone popup (Add Toilet form) ---------- */
+let newClientPendingName = null;
+function openNewClientModal(name){
+  newClientPendingName = name;
+  document.getElementById('newclient-name').textContent = name;
+  document.getElementById('newclient-phone').value = '';
+  document.getElementById('newclient-backdrop').classList.add('open');
+  setTimeout(()=>document.getElementById('newclient-phone').focus(), 50);
+}
+function closeNewClientModal(){
+  newClientPendingName = null;
+  document.getElementById('newclient-backdrop').classList.remove('open');
+}
+document.getElementById('newclient-cancel').addEventListener('click', closeNewClientModal);
+document.getElementById('newclient-backdrop').addEventListener('click', (e)=>{
+  if(e.target.id==='newclient-backdrop') closeNewClientModal();
+});
+document.getElementById('newclient-confirm').addEventListener('click', async ()=>{
+  const name = newClientPendingName;
+  const phone = document.getElementById('newclient-phone').value.trim();
+  if(!name) return;
+  closeNewClientModal();
+  setLoading(true);
+  try{
+    await apiPost('addClient', {name, phone});
+    if(!state.clients.includes(name)){ state.clients.push(name); state.clients.sort(); }
+    toast('Added new client: '+name);
+    setUndo('Remove the new client "'+name+'" you just created', async ()=>{ await apiPost('deleteClient', {name}); });
+  }catch(err){
+    toast('Could not add client: '+err.message, true);
+  }
+  setLoading(false);
+});
+
 function openNoteModal(id){
   const r = state.records.find(x=>x.id===id);
   if(!r) return;
