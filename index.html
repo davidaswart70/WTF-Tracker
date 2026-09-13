@@ -60,32 +60,23 @@
   @keyframes waveDriftA{ from{ background-position-x:0; } to{ background-position-x:-1440px; } }
   @keyframes waveDriftB{ from{ background-position-x:0; } to{ background-position-x:-1440px; } }
 
-  .unlock-wave{
-    position:fixed; inset:0; z-index:1001; pointer-events:none;
-    transform:translateY(100%); display:none;
+  .sun{
+    position:absolute; top:-70px; left:-70px; width:230px; height:230px;
+    pointer-events:none; z-index:1;
   }
-  .unlock-wave svg{ width:120%; height:100%; display:block; position:relative; left:-10%; overflow:visible; }
-  .unlock-wave.playing{ display:block; animation:waveSweep 1250ms cubic-bezier(.6,0,.3,1) forwards; }
-  .unlock-wave.playing .wave-back{ animation:waveSwayBack 1250ms cubic-bezier(.6,0,.3,1) forwards; }
-  .unlock-wave.playing .wave-mid{ animation:waveSwayMid 1250ms cubic-bezier(.6,0,.3,1) forwards; }
-  .unlock-wave.playing .wave-foam{ animation:waveSwayFoam 1250ms cubic-bezier(.6,0,.3,1) forwards; }
-  .unlock-wave.playing .foam-dot{ animation:foamPulse 1250ms ease-out forwards; }
-  @keyframes waveSweep{
-    0%{ transform:translateY(100%) rotate(0deg); }
-    45%{ transform:translateY(6%) rotate(-.6deg); }
-    60%{ transform:translateY(0%) rotate(.4deg); }
-    100%{ transform:translateY(-102%) rotate(0deg); }
+  .sun-core{
+    position:absolute; top:50%; left:50%; width:96px; height:96px; margin:-48px 0 0 -48px;
+    border-radius:50%;
+    background:radial-gradient(circle at 42% 38%, #fffdf3 0%, #ffedab 38%, #ffd35e 65%, rgba(255,211,94,0) 78%);
+    animation:sunPulse 6s ease-in-out infinite;
   }
-  @keyframes waveSwayBack{ 0%{transform:translateX(-3%);} 40%{transform:translateX(2%);} 70%{transform:translateX(-2%);} 100%{transform:translateX(1%);} }
-  @keyframes waveSwayMid{ 0%{transform:translateX(3%);} 40%{transform:translateX(-3%);} 70%{transform:translateX(2%);} 100%{transform:translateX(-2%);} }
-  @keyframes waveSwayFoam{ 0%{transform:translateX(-2%);} 40%{transform:translateX(4%);} 70%{transform:translateX(-3%);} 100%{transform:translateX(2%);} }
-  @keyframes foamPulse{
-    0%{ opacity:0; }
-    45%{ opacity:.9; }
-    62%{ opacity:.9; }
-    80%{ opacity:0; }
-    100%{ opacity:0; }
+  .sun-rays{ position:absolute; inset:0; animation:sunRotate 90s linear infinite; }
+  .sun-rays line{ stroke:#ffe9a8; stroke-width:4; stroke-linecap:round; opacity:.5; }
+  @keyframes sunPulse{
+    0%,100%{ transform:scale(1); opacity:.95; }
+    50%{ transform:scale(1.08); opacity:1; }
   }
+  @keyframes sunRotate{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
 
   .gulls{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1; }
   .gull{ position:absolute; width:34px; height:17px; opacity:.85; animation:flyAcross linear infinite; filter:drop-shadow(0 1px 1px rgba(10,15,50,.25)); }
@@ -107,22 +98,6 @@
   }
   @keyframes flapA{ 0%,100%{ opacity:1; } 50%{ opacity:0; } }
   @keyframes flapB{ 0%,100%{ opacity:0; } 50%{ opacity:1; } }
-
-  .fish-pond{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1; }
-  .fish{ position:absolute; width:30px; height:16px; opacity:0; animation:fishJump ease-in-out infinite; transform-origin:50% 100%; }
-  .fish svg{ width:100%; height:100%; display:block; overflow:visible; }
-  .fish.f1{ left:14%; bottom:22%; animation-duration:9s; animation-delay:-1s; }
-  .fish.f2{ left:38%; bottom:16%; width:24px; height:13px; animation-duration:13s; animation-delay:-6s; }
-  .fish.f3{ left:63%; bottom:26%; animation-duration:16s; animation-delay:-3s; }
-  .fish.f4{ left:82%; bottom:14%; width:22px; height:12px; animation-duration:11s; animation-delay:-8.5s; }
-  @keyframes fishJump{
-    0%,86%,100%{ opacity:0; transform:translate(0,0) rotate(0deg) scale(.9); }
-    88%{ opacity:1; transform:translate(2px,-6px) rotate(-18deg) scale(.95); }
-    91%{ opacity:1; transform:translate(6px,-52px) rotate(8deg) scale(1); }
-    94%{ opacity:1; transform:translate(9px,-14px) rotate(38deg) scale(.97); }
-    96%{ opacity:1; transform:translate(11px,6px) rotate(58deg) scale(.9); }
-    97.5%{ opacity:0; transform:translate(12px,12px) rotate(62deg) scale(.82); }
-  }
 
   .password-box{
     position:relative; background:#fff; border-radius:var(--radius); box-shadow:var(--shadow);
@@ -437,17 +412,15 @@
 
 <!-- PASSWORD GATE -->
 <div class="password-gate" id="password-gate">
+  <div class="sun" aria-hidden="true">
+    <svg class="sun-rays" viewBox="0 0 230 230"><line x1="167.0" y1="115.0" x2="215.0" y2="115.0"/><line x1="160.0" y1="141.0" x2="201.6" y2="165.0"/><line x1="141.0" y1="160.0" x2="165.0" y2="201.6"/><line x1="115.0" y1="167.0" x2="115.0" y2="215.0"/><line x1="89.0" y1="160.0" x2="65.0" y2="201.6"/><line x1="70.0" y1="141.0" x2="28.4" y2="165.0"/><line x1="63.0" y1="115.0" x2="15.0" y2="115.0"/><line x1="70.0" y1="89.0" x2="28.4" y2="65.0"/><line x1="89.0" y1="70.0" x2="65.0" y2="28.4"/><line x1="115.0" y1="63.0" x2="115.0" y2="15.0"/><line x1="141.0" y1="70.0" x2="165.0" y2="28.4"/><line x1="160.0" y1="89.0" x2="201.6" y2="65.0"/></svg>
+    <div class="sun-core"></div>
+  </div>
   <div class="gulls" aria-hidden="true">
     <div class="gull g1"><svg viewBox="0 0 40 20"><path class="wing-a" d="M2,14 Q10,2 20,12 Q30,2 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/><path class="wing-b" d="M2,14 Q10,9 20,13 Q30,9 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/></svg></div>
     <div class="gull g2"><svg viewBox="0 0 40 20"><path class="wing-a" d="M2,14 Q10,2 20,12 Q30,2 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/><path class="wing-b" d="M2,14 Q10,9 20,13 Q30,9 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/></svg></div>
     <div class="gull g3"><svg viewBox="0 0 40 20"><path class="wing-a" d="M2,14 Q10,2 20,12 Q30,2 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/><path class="wing-b" d="M2,14 Q10,9 20,13 Q30,9 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/></svg></div>
     <div class="gull g4"><svg viewBox="0 0 40 20"><path class="wing-a" d="M2,14 Q10,2 20,12 Q30,2 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/><path class="wing-b" d="M2,14 Q10,9 20,13 Q30,9 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/></svg></div>
-  </div>
-  <div class="fish-pond" aria-hidden="true">
-    <div class="fish f1"><svg viewBox="0 0 40 20"><path d="M2,10 Q10,0 22,5 Q30,2 36,6 L30,10 L36,14 Q30,18 22,15 Q10,20 2,10 Z" fill="#bfe3ff" stroke="#0f2154" stroke-width="1"/><circle cx="10" cy="8" r="1.2" fill="#0f2154"/></svg></div>
-    <div class="fish f2"><svg viewBox="0 0 40 20"><path d="M2,10 Q10,0 22,5 Q30,2 36,6 L30,10 L36,14 Q30,18 22,15 Q10,20 2,10 Z" fill="#9fd6ff" stroke="#0f2154" stroke-width="1"/><circle cx="10" cy="8" r="1.2" fill="#0f2154"/></svg></div>
-    <div class="fish f3"><svg viewBox="0 0 40 20"><path d="M2,10 Q10,0 22,5 Q30,2 36,6 L30,10 L36,14 Q30,18 22,15 Q10,20 2,10 Z" fill="#cfe9ff" stroke="#0f2154" stroke-width="1"/><circle cx="10" cy="8" r="1.2" fill="#0f2154"/></svg></div>
-    <div class="fish f4"><svg viewBox="0 0 40 20"><path d="M2,10 Q10,0 22,5 Q30,2 36,6 L30,10 L36,14 Q30,18 22,15 Q10,20 2,10 Z" fill="#a9deff" stroke="#0f2154" stroke-width="1"/><circle cx="10" cy="8" r="1.2" fill="#0f2154"/></svg></div>
   </div>
   <div class="password-box">
     <div class="brand" style="justify-content:center; margin-bottom:18px;">
@@ -459,17 +432,6 @@
     <div class="password-error" id="password-error">Incorrect password, try again.</div>
     <button class="btn btn-primary" id="password-submit" style="width:100%; justify-content:center; margin-top:12px;">Unlock</button>
   </div>
-</div>
-<div class="unlock-wave" id="unlock-wave" aria-hidden="true">
-  <svg viewBox="0 0 1440 260" preserveAspectRatio="none">
-    <path class="wave-back" fill="#0f2154" d="M0,130 C180,180 360,80 540,130 C720,180 900,80 1080,130 C1260,180 1350,110 1440,130 L1440,260 L0,260 Z"></path>
-    <path class="wave-mid" fill="#1d3f8f" d="M0,108 C200,158 380,58 560,108 C740,158 920,58 1100,108 C1280,158 1360,88 1440,108 L1440,260 L0,260 Z"></path>
-    <path class="wave-foam" fill="#bfe3ff" opacity="0.7" d="M0,98 C200,148 380,48 560,98 C740,148 920,48 1100,98 C1280,148 1360,78 1440,98 L1440,112 C1280,162 1100,62 920,112 C740,162 560,62 380,112 C200,162 0,62 0,112 Z"></path>
-    <circle class="foam-dot" cx="220" cy="90" r="4" fill="#fff" opacity="0"></circle>
-    <circle class="foam-dot" cx="560" cy="70" r="3" fill="#fff" opacity="0"></circle>
-    <circle class="foam-dot" cx="900" cy="82" r="5" fill="#fff" opacity="0"></circle>
-    <circle class="foam-dot" cx="1180" cy="66" r="3.5" fill="#fff" opacity="0"></circle>
-  </svg>
 </div>
 
 <div class="app">
@@ -814,12 +776,8 @@ const APP_PASSWORD = '0303';
 
   function tryUnlock(){
     if(input.value === APP_PASSWORD){
+      gate.classList.add('unlocked');
       error.classList.remove('show');
-      submitBtn.disabled = true;
-      const wave = document.getElementById('unlock-wave');
-      wave.classList.add('playing');
-      setTimeout(()=>{ gate.classList.add('unlocked'); }, 550);
-      setTimeout(()=>{ wave.classList.remove('playing'); }, 1150);
     } else {
       error.classList.add('show');
       input.value = '';
