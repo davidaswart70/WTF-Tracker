@@ -60,21 +60,40 @@
   @keyframes waveDriftA{ from{ background-position-x:0; } to{ background-position-x:-1440px; } }
   @keyframes waveDriftB{ from{ background-position-x:0; } to{ background-position-x:-1440px; } }
 
+  .sun-wash{
+    position:absolute; top:-30%; left:-30%; width:85%; height:75%; pointer-events:none; z-index:0;
+    background:radial-gradient(circle at 15% 15%, rgba(255,214,140,.55) 0%, rgba(255,190,110,.28) 30%, rgba(255,170,90,.12) 50%, rgba(255,170,90,0) 72%);
+  }
   .sun{
-    position:absolute; top:-70px; left:-70px; width:230px; height:230px;
+    position:absolute; top:-120px; left:-120px; width:420px; height:420px;
     pointer-events:none; z-index:1;
   }
-  .sun-core{
-    position:absolute; top:50%; left:50%; width:96px; height:96px; margin:-48px 0 0 -48px;
-    border-radius:50%;
-    background:radial-gradient(circle at 42% 38%, #fffdf3 0%, #ffedab 38%, #ffd35e 65%, rgba(255,211,94,0) 78%);
-    animation:sunPulse 6s ease-in-out infinite;
+  .sun-rays{
+    position:absolute; inset:0; border-radius:50%;
+    background:repeating-conic-gradient(from 0deg, rgba(255,247,214,.5) 0deg 3deg, transparent 3deg 16deg);
+    -webkit-mask-image:radial-gradient(circle at 50% 50%, #000 22%, transparent 64%);
+            mask-image:radial-gradient(circle at 50% 50%, #000 22%, transparent 64%);
+    filter:blur(2.5px);
+    opacity:.75;
+    animation:sunRotate 140s linear infinite;
   }
-  .sun-rays{ position:absolute; inset:0; animation:sunRotate 90s linear infinite; }
-  .sun-rays line{ stroke:#ffe9a8; stroke-width:4; stroke-linecap:round; opacity:.5; }
+  .sun-halo{
+    position:absolute; top:50%; left:50%; width:230px; height:230px; margin:-115px 0 0 -115px;
+    border-radius:50%;
+    background:radial-gradient(circle at 45% 42%, rgba(255,255,255,.9) 0%, rgba(255,236,180,.55) 22%, rgba(255,205,120,.25) 40%, rgba(255,190,110,0) 62%);
+    filter:blur(3px);
+    animation:sunPulse 7s ease-in-out infinite;
+  }
+  .sun-core{
+    position:absolute; top:50%; left:50%; width:108px; height:108px; margin:-54px 0 0 -54px;
+    border-radius:50%;
+    background:radial-gradient(circle at 42% 38%, #ffffff 0%, #fffaea 24%, #ffe9a8 48%, #ffcf6e 70%, rgba(255,207,110,0) 82%);
+    box-shadow:0 0 45px 18px rgba(255,220,140,.55), 0 0 110px 55px rgba(255,190,100,.28);
+    animation:sunPulse 7s ease-in-out infinite;
+  }
   @keyframes sunPulse{
     0%,100%{ transform:scale(1); opacity:.95; }
-    50%{ transform:scale(1.08); opacity:1; }
+    50%{ transform:scale(1.06); opacity:1; }
   }
   @keyframes sunRotate{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
 
@@ -412,8 +431,10 @@
 
 <!-- PASSWORD GATE -->
 <div class="password-gate" id="password-gate">
+  <div class="sun-wash" aria-hidden="true"></div>
   <div class="sun" aria-hidden="true">
-    <svg class="sun-rays" viewBox="0 0 230 230"><line x1="167.0" y1="115.0" x2="215.0" y2="115.0"/><line x1="160.0" y1="141.0" x2="201.6" y2="165.0"/><line x1="141.0" y1="160.0" x2="165.0" y2="201.6"/><line x1="115.0" y1="167.0" x2="115.0" y2="215.0"/><line x1="89.0" y1="160.0" x2="65.0" y2="201.6"/><line x1="70.0" y1="141.0" x2="28.4" y2="165.0"/><line x1="63.0" y1="115.0" x2="15.0" y2="115.0"/><line x1="70.0" y1="89.0" x2="28.4" y2="65.0"/><line x1="89.0" y1="70.0" x2="65.0" y2="28.4"/><line x1="115.0" y1="63.0" x2="115.0" y2="15.0"/><line x1="141.0" y1="70.0" x2="165.0" y2="28.4"/><line x1="160.0" y1="89.0" x2="201.6" y2="65.0"/></svg>
+    <div class="sun-rays"></div>
+    <div class="sun-halo"></div>
     <div class="sun-core"></div>
   </div>
   <div class="gulls" aria-hidden="true">
