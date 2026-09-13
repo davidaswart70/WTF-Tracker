@@ -32,12 +32,48 @@
   .app{ min-height:100vh; }
 
   .password-gate{
-    position:fixed; inset:0; background:var(--navy); z-index:1000;
+    position:fixed; inset:0; z-index:1000; overflow:hidden;
     display:flex; align-items:center; justify-content:center; padding:20px;
+    background:linear-gradient(200deg,#0c1240 0%,#161f66 35%,#1d3f8f 68%,#1f74b0 100%);
+    background-size:220% 220%;
+    animation:oceanDrift 16s ease-in-out infinite;
   }
   .password-gate.unlocked{ display:none; }
+  .password-gate::before, .password-gate::after{
+    content:''; position:absolute; left:0; right:-1440px; pointer-events:none;
+    background-repeat:repeat-x;
+  }
+  .password-gate::before{
+    bottom:-30px; height:200px; background-size:1440px 200px; opacity:.35;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 200'%3E%3Cpath fill='%232a5a9e' d='M0,100 C240,160 480,40 720,100 C960,160 1200,40 1440,100 L1440,200 L0,200 Z'/%3E%3C/svg%3E");
+    animation:waveDriftA 11s linear infinite;
+  }
+  .password-gate::after{
+    bottom:-55px; height:230px; background-size:1440px 230px; opacity:.25;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 230'%3E%3Cpath fill='%233a86c9' d='M0,110 C240,170 480,50 720,110 C960,170 1200,50 1440,110 L1440,230 L0,230 Z'/%3E%3C/svg%3E");
+    animation:waveDriftB 17s linear infinite reverse;
+  }
+  @keyframes oceanDrift{
+    0%,100%{ background-position:0% 20%; }
+    50%{ background-position:100% 80%; }
+  }
+  @keyframes waveDriftA{ from{ background-position-x:0; } to{ background-position-x:-1440px; } }
+  @keyframes waveDriftB{ from{ background-position-x:0; } to{ background-position-x:-1440px; } }
+
+  .unlock-wave{
+    position:fixed; inset:0; z-index:1001; pointer-events:none;
+    transform:translateY(100%); display:none;
+  }
+  .unlock-wave svg{ width:100%; height:100%; display:block; }
+  .unlock-wave.playing{ display:block; animation:waveSweep 1100ms cubic-bezier(.65,0,.35,1) forwards; }
+  @keyframes waveSweep{
+    0%{ transform:translateY(100%); }
+    50%{ transform:translateY(0%); }
+    100%{ transform:translateY(-100%); }
+  }
+
   .password-box{
-    background:#fff; border-radius:var(--radius); box-shadow:var(--shadow);
+    position:relative; background:#fff; border-radius:var(--radius); box-shadow:var(--shadow);
     padding:32px 28px; width:340px; max-width:100%;
   }
   .password-box label{ display:block; margin-bottom:8px; }
@@ -125,7 +161,7 @@
   .autocomplete-list .muted{ color:var(--ink-soft); font-size:11.5px; }
 
   .btn{
-    all:unset; cursor:pointer; padding:10px 18px; border-radius:8px; font-weight:700; font-size:13.5px;
+    all:unset; box-sizing:border-box; cursor:pointer; padding:10px 18px; border-radius:8px; font-weight:700; font-size:13.5px;
     display:inline-flex; align-items:center; gap:7px;
   }
   .btn-primary{ background:var(--navy); color:#fff; }
@@ -359,6 +395,12 @@
     <div class="password-error" id="password-error">Incorrect password, try again.</div>
     <button class="btn btn-primary" id="password-submit" style="width:100%; justify-content:center; margin-top:12px;">Unlock</button>
   </div>
+</div>
+<div class="unlock-wave" id="unlock-wave" aria-hidden="true">
+  <svg viewBox="0 0 1440 220" preserveAspectRatio="none">
+    <path fill="#1d3f8f" d="M0,90 C240,150 480,30 720,90 C960,150 1200,30 1440,90 L1440,220 L0,220 Z"></path>
+    <path fill="#5fb0e8" opacity="0.55" d="M0,80 C240,140 480,20 720,80 C960,140 1200,20 1440,80 L1440,100 C1200,40 960,160 720,100 C480,40 240,160 0,100 Z"></path>
+  </svg>
 </div>
 
 <div class="app">
@@ -703,8 +745,12 @@ const APP_PASSWORD = '0303';
 
   function tryUnlock(){
     if(input.value === APP_PASSWORD){
-      gate.classList.add('unlocked');
       error.classList.remove('show');
+      submitBtn.disabled = true;
+      const wave = document.getElementById('unlock-wave');
+      wave.classList.add('playing');
+      setTimeout(()=>{ gate.classList.add('unlocked'); }, 550);
+      setTimeout(()=>{ wave.classList.remove('playing'); }, 1150);
     } else {
       error.classList.add('show');
       input.value = '';
