@@ -61,8 +61,11 @@
   @keyframes waveDriftB{ from{ background-position-x:0; } to{ background-position-x:-1440px; } }
 
   .sun-wash{
-    position:absolute; top:-30%; left:-30%; width:85%; height:75%; pointer-events:none; z-index:0;
-    background:radial-gradient(circle at 15% 15%, rgba(255,214,140,.55) 0%, rgba(255,190,110,.28) 30%, rgba(255,170,90,.12) 50%, rgba(255,170,90,0) 72%);
+    position:absolute; top:-45%; left:-45%; width:110%; height:100%; pointer-events:none; z-index:0;
+    background:radial-gradient(circle at 15% 15%,
+      rgba(255,214,140,.45) 0%, rgba(255,205,130,.32) 14%, rgba(255,196,120,.22) 26%,
+      rgba(255,188,112,.14) 38%, rgba(255,180,104,.08) 52%, rgba(255,175,98,.04) 66%,
+      rgba(255,175,98,.015) 82%, rgba(255,175,98,0) 100%);
   }
   .sun{
     position:absolute; top:-120px; left:-120px; width:420px; height:420px;
@@ -77,18 +80,14 @@
     opacity:.75;
     animation:sunRotate 140s linear infinite;
   }
-  .sun-halo{
-    position:absolute; top:50%; left:50%; width:230px; height:230px; margin:-115px 0 0 -115px;
-    border-radius:50%;
-    background:radial-gradient(circle at 45% 42%, rgba(255,255,255,.9) 0%, rgba(255,236,180,.55) 22%, rgba(255,205,120,.25) 40%, rgba(255,190,110,0) 62%);
-    filter:blur(3px);
-    animation:sunPulse 7s ease-in-out infinite;
-  }
   .sun-core{
-    position:absolute; top:50%; left:50%; width:108px; height:108px; margin:-54px 0 0 -54px;
+    position:absolute; top:50%; left:50%; width:340px; height:340px; margin:-170px 0 0 -170px;
     border-radius:50%;
-    background:radial-gradient(circle at 42% 38%, #ffffff 0%, #fffaea 24%, #ffe9a8 48%, #ffcf6e 70%, rgba(255,207,110,0) 82%);
-    box-shadow:0 0 45px 18px rgba(255,220,140,.55), 0 0 110px 55px rgba(255,190,100,.28);
+    background:radial-gradient(circle at 45% 42%,
+      #ffffff 0%, #fffaf0 5%, #fff2cf 10%, #ffe9a8 17%, #ffde8c 24%,
+      #ffcf6e 32%, rgba(255,196,100,.75) 41%, rgba(255,190,100,.5) 51%,
+      rgba(255,185,100,.3) 61%, rgba(255,180,100,.16) 71%,
+      rgba(255,180,100,.07) 82%, rgba(255,180,100,.02) 92%, rgba(255,180,100,0) 100%);
     animation:sunPulse 7s ease-in-out infinite;
   }
   @keyframes sunPulse{
@@ -119,7 +118,7 @@
   @keyframes flapB{ 0%,100%{ opacity:0; } 50%{ opacity:1; } }
 
   .password-box{
-    position:relative; background:#fff; border-radius:var(--radius); box-shadow:var(--shadow);
+    position:relative; z-index:2; background:#fff; border-radius:var(--radius); box-shadow:var(--shadow);
     padding:32px 28px; width:340px; max-width:100%;
   }
   .password-box label{ display:block; margin-bottom:8px; }
@@ -434,7 +433,6 @@
   <div class="sun-wash" aria-hidden="true"></div>
   <div class="sun" aria-hidden="true">
     <div class="sun-rays"></div>
-    <div class="sun-halo"></div>
     <div class="sun-core"></div>
   </div>
   <div class="gulls" aria-hidden="true">
