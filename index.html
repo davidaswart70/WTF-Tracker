@@ -64,13 +64,49 @@
     position:fixed; inset:0; z-index:1001; pointer-events:none;
     transform:translateY(100%); display:none;
   }
-  .unlock-wave svg{ width:100%; height:100%; display:block; }
-  .unlock-wave.playing{ display:block; animation:waveSweep 1100ms cubic-bezier(.65,0,.35,1) forwards; }
+  .unlock-wave svg{ width:120%; height:100%; display:block; position:relative; left:-10%; overflow:visible; }
+  .unlock-wave.playing{ display:block; animation:waveSweep 1250ms cubic-bezier(.6,0,.3,1) forwards; }
+  .unlock-wave.playing .wave-back{ animation:waveSwayBack 1250ms cubic-bezier(.6,0,.3,1) forwards; }
+  .unlock-wave.playing .wave-mid{ animation:waveSwayMid 1250ms cubic-bezier(.6,0,.3,1) forwards; }
+  .unlock-wave.playing .wave-foam{ animation:waveSwayFoam 1250ms cubic-bezier(.6,0,.3,1) forwards; }
+  .unlock-wave.playing .foam-dot{ animation:foamPulse 1250ms ease-out forwards; }
   @keyframes waveSweep{
-    0%{ transform:translateY(100%); }
-    50%{ transform:translateY(0%); }
-    100%{ transform:translateY(-100%); }
+    0%{ transform:translateY(100%) rotate(0deg); }
+    45%{ transform:translateY(6%) rotate(-.6deg); }
+    60%{ transform:translateY(0%) rotate(.4deg); }
+    100%{ transform:translateY(-102%) rotate(0deg); }
   }
+  @keyframes waveSwayBack{ 0%{transform:translateX(-3%);} 40%{transform:translateX(2%);} 70%{transform:translateX(-2%);} 100%{transform:translateX(1%);} }
+  @keyframes waveSwayMid{ 0%{transform:translateX(3%);} 40%{transform:translateX(-3%);} 70%{transform:translateX(2%);} 100%{transform:translateX(-2%);} }
+  @keyframes waveSwayFoam{ 0%{transform:translateX(-2%);} 40%{transform:translateX(4%);} 70%{transform:translateX(-3%);} 100%{transform:translateX(2%);} }
+  @keyframes foamPulse{
+    0%{ opacity:0; }
+    45%{ opacity:.9; }
+    62%{ opacity:.9; }
+    80%{ opacity:0; }
+    100%{ opacity:0; }
+  }
+
+  .gulls{ position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1; }
+  .gull{ position:absolute; width:34px; height:17px; opacity:.85; animation:flyAcross linear infinite; filter:drop-shadow(0 1px 1px rgba(10,15,50,.25)); }
+  .gull svg{ width:100%; height:100%; display:block; overflow:visible; }
+  .gull .wing-a{ animation:flapA 700ms ease-in-out infinite; }
+  .gull .wing-b{ animation:flapB 700ms ease-in-out infinite; }
+  .gull.g1{ top:10%; animation-duration:17s; animation-delay:-1s; }
+  .gull.g2{ top:19%; width:26px; height:13px; opacity:.65; animation-duration:23s; animation-delay:-9s; }
+  .gull.g3{ top:6%; width:20px; height:10px; opacity:.5; animation-duration:28s; animation-delay:-17s; }
+  .gull.g4{ top:15%; animation-duration:20s; animation-delay:-4.5s; }
+  .gull.g4 .wing-a, .gull.g4 .wing-b{ animation-duration:640ms; }
+  .gull.g2 .wing-a, .gull.g2 .wing-b{ animation-duration:780ms; }
+  .gull.g3 .wing-a, .gull.g3 .wing-b{ animation-duration:860ms; }
+  @keyframes flyAcross{
+    0%{ transform:translate(-15vw,0); }
+    30%{ transform:translate(30vw,-16px); }
+    60%{ transform:translate(70vw,8px); }
+    100%{ transform:translate(120vw,-6px); }
+  }
+  @keyframes flapA{ 0%,100%{ opacity:1; } 50%{ opacity:0; } }
+  @keyframes flapB{ 0%,100%{ opacity:0; } 50%{ opacity:1; } }
 
   .password-box{
     position:relative; background:#fff; border-radius:var(--radius); box-shadow:var(--shadow);
@@ -385,6 +421,12 @@
 
 <!-- PASSWORD GATE -->
 <div class="password-gate" id="password-gate">
+  <div class="gulls" aria-hidden="true">
+    <div class="gull g1"><svg viewBox="0 0 40 20"><path class="wing-a" d="M2,14 Q10,2 20,12 Q30,2 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/><path class="wing-b" d="M2,14 Q10,9 20,13 Q30,9 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+    <div class="gull g2"><svg viewBox="0 0 40 20"><path class="wing-a" d="M2,14 Q10,2 20,12 Q30,2 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/><path class="wing-b" d="M2,14 Q10,9 20,13 Q30,9 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+    <div class="gull g3"><svg viewBox="0 0 40 20"><path class="wing-a" d="M2,14 Q10,2 20,12 Q30,2 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/><path class="wing-b" d="M2,14 Q10,9 20,13 Q30,9 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+    <div class="gull g4"><svg viewBox="0 0 40 20"><path class="wing-a" d="M2,14 Q10,2 20,12 Q30,2 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/><path class="wing-b" d="M2,14 Q10,9 20,13 Q30,9 38,14" fill="none" stroke="#f3f7ff" stroke-width="2.2" stroke-linecap="round"/></svg></div>
+  </div>
   <div class="password-box">
     <div class="brand" style="justify-content:center; margin-bottom:18px;">
       <div class="mark">W</div>
@@ -397,9 +439,14 @@
   </div>
 </div>
 <div class="unlock-wave" id="unlock-wave" aria-hidden="true">
-  <svg viewBox="0 0 1440 220" preserveAspectRatio="none">
-    <path fill="#1d3f8f" d="M0,90 C240,150 480,30 720,90 C960,150 1200,30 1440,90 L1440,220 L0,220 Z"></path>
-    <path fill="#5fb0e8" opacity="0.55" d="M0,80 C240,140 480,20 720,80 C960,140 1200,20 1440,80 L1440,100 C1200,40 960,160 720,100 C480,40 240,160 0,100 Z"></path>
+  <svg viewBox="0 0 1440 260" preserveAspectRatio="none">
+    <path class="wave-back" fill="#0f2154" d="M0,130 C180,180 360,80 540,130 C720,180 900,80 1080,130 C1260,180 1350,110 1440,130 L1440,260 L0,260 Z"></path>
+    <path class="wave-mid" fill="#1d3f8f" d="M0,108 C200,158 380,58 560,108 C740,158 920,58 1100,108 C1280,158 1360,88 1440,108 L1440,260 L0,260 Z"></path>
+    <path class="wave-foam" fill="#bfe3ff" opacity="0.7" d="M0,98 C200,148 380,48 560,98 C740,148 920,48 1100,98 C1280,148 1360,78 1440,98 L1440,112 C1280,162 1100,62 920,112 C740,162 560,62 380,112 C200,162 0,62 0,112 Z"></path>
+    <circle class="foam-dot" cx="220" cy="90" r="4" fill="#fff" opacity="0"></circle>
+    <circle class="foam-dot" cx="560" cy="70" r="3" fill="#fff" opacity="0"></circle>
+    <circle class="foam-dot" cx="900" cy="82" r="5" fill="#fff" opacity="0"></circle>
+    <circle class="foam-dot" cx="1180" cy="66" r="3.5" fill="#fff" opacity="0"></circle>
   </svg>
 </div>
 
