@@ -291,6 +291,25 @@
   }
   .toast.show{ opacity:1; transform:translateY(0); }
 
+  .saving-overlay{
+    position:fixed; inset:0; background:rgba(20,24,60,.35); z-index:2000;
+    display:none; align-items:center; justify-content:center;
+    opacity:0; transition:opacity .15s ease;
+  }
+  .saving-overlay.show{ display:flex; }
+  .saving-overlay.show.in{ opacity:1; }
+  .saving-box{
+    background:#fff; border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:22px 30px; display:flex; align-items:center; gap:14px;
+  }
+  .saving-spinner{
+    width:22px; height:22px; border-radius:50%;
+    border:3px solid var(--periwinkle); border-top-color:var(--navy);
+    animation:savingSpin .7s linear infinite; flex-shrink:0;
+  }
+  .saving-text{ font-weight:700; color:var(--navy); font-size:14px; }
+  @keyframes savingSpin{ to{ transform:rotate(360deg); } }
+
   .hist-item{ display:flex; gap:12px; padding:12px 0; border-bottom:1px solid #eef0f3; align-items:flex-start; }
   .hist-item:last-child{ border-bottom:none; }
   .hist-item .idot{ width:8px;height:8px;border-radius:50%; margin-top:6px; flex-shrink:0; }
@@ -786,6 +805,13 @@
 
 <div class="toast" id="toast"></div>
 
+<div class="saving-overlay" id="saving-overlay" aria-hidden="true">
+  <div class="saving-box">
+    <div class="saving-spinner"></div>
+    <div class="saving-text">Saving&hellip;</div>
+  </div>
+</div>
+
 <script>
 /* ---------- Password gate - asks every time, nothing is remembered between visits ---------- */
 const APP_PASSWORD = '0303';
@@ -823,15 +849,35 @@ async function apiGet(action, params){
   if(data && data.error) throw new Error(data.error);
   return data;
 }
+let savingCount = 0;
+function showSaving(){
+  savingCount++;
+  const el = document.getElementById('saving-overlay');
+  el.classList.add('show');
+  requestAnimationFrame(()=> el.classList.add('in'));
+}
+function hideSaving(){
+  savingCount = Math.max(0, savingCount - 1);
+  if(savingCount === 0){
+    const el = document.getElementById('saving-overlay');
+    el.classList.remove('in');
+    setTimeout(()=>{ if(savingCount===0) el.classList.remove('show'); }, 150);
+  }
+}
 async function apiPost(action, body){
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action, ...(body||{}) })
-  });
-  const data = await res.json();
-  if(data && data.error) throw new Error(data.error);
-  return data;
+  showSaving();
+  try{
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action, ...(body||{}) })
+    });
+    const data = await res.json();
+    if(data && data.error) throw new Error(data.error);
+    return data;
+  } finally {
+    hideSaving();
+  }
 }
 
 function chip(text, kind){
