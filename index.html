@@ -853,10 +853,22 @@ async function parseApiResponse(res){
   if(data && data.error) throw new Error(data.error);
   return data;
 }
-async function apiGet(action, params){
+function sleep(ms){ return new Promise(r=>setTimeout(r, ms)); }
+async function apiGet(action, params, attempt){
+  attempt = attempt || 1;
   const qs = new URLSearchParams({ action, ...(params||{}) });
-  const res = await fetch(API_URL + '?' + qs.toString());
-  return parseApiResponse(res);
+  try{
+    const res = await fetch(API_URL + '?' + qs.toString());
+    return await parseApiResponse(res);
+  }catch(err){
+    // Reads are safe to retry - the Sheet backend occasionally returns an
+    // HTML error page under concurrent load instead of JSON.
+    if(attempt < 3){
+      await sleep(attempt * 600);
+      return apiGet(action, params, attempt + 1);
+    }
+    throw err;
+  }
 }
 let savingCount = 0;
 function showSaving(){
@@ -1067,16 +1079,19 @@ function renderCurrentPage(){
 }
 
 /* ---------- Load everything from the live Sheet ---------- */
+function staggeredGet(action, delayMs){
+  return sleep(delayMs).then(()=> apiGet(action));
+}
 async function refreshAll(){
   setLoading(true);
   try{
     const [clients, towns, codes, toilets, history, clientDetails] = await Promise.all([
-      apiGet('getClients'),
-      apiGet('getTowns'),
-      apiGet('getCodes'),
-      apiGet('getToilets'),
-      apiGet('getHistory'),
-      apiGet('getClientDetails'),
+      staggeredGet('getClients', 0),
+      staggeredGet('getTowns', 80),
+      staggeredGet('getCodes', 160),
+      staggeredGet('getToilets', 240),
+      staggeredGet('getHistory', 320),
+      staggeredGet('getClientDetails', 400),
     ]);
     state.clients = (clients||[]).filter(Boolean).sort();
     state.towns = (towns||[]).filter(Boolean).sort();
