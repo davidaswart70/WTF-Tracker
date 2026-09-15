@@ -644,6 +644,7 @@
           <div class="field">
             <label>Add a client</label>
             <input type="text" id="new-client-name" placeholder="Client name">
+            <input type="text" id="new-client-phone" placeholder="Phone number (optional)" style="margin-top:8px;">
           </div>
           <div class="field">
             <label>Add a town</label>
@@ -1817,13 +1818,16 @@ function renderManage(){
 
 document.getElementById('add-client-btn').addEventListener('click', async ()=>{
   const el = document.getElementById('new-client-name');
+  const phoneEl = document.getElementById('new-client-phone');
   const v = el.value.trim();
+  const phone = phoneEl.value.trim();
   if(!v) return;
   setLoading(true);
   try{
-    await apiPost('addClient', {name:v});
+    await apiPost('addClient', {name:v, phone});
     toast('Client added: '+v);
     el.value='';
+    phoneEl.value='';
     await refreshAll();
     renderManage();
     setUndo('Remove the new client "'+v+'" you just added', async ()=>{ await apiPost('deleteClient', {name:v}); });
