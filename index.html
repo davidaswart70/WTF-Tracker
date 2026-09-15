@@ -842,12 +842,21 @@ let state = { clients: [], towns: [], codes: [], records: [], history: [], clien
 let editingId = null;
 
 /* ---------- API helpers ---------- */
+async function parseApiResponse(res){
+  const text = await res.text();
+  let data;
+  try{
+    data = JSON.parse(text);
+  }catch(e){
+    throw new Error('The Sheet did not return data (got a web page instead of JSON) - the Apps Script deployment may need attention.');
+  }
+  if(data && data.error) throw new Error(data.error);
+  return data;
+}
 async function apiGet(action, params){
   const qs = new URLSearchParams({ action, ...(params||{}) });
   const res = await fetch(API_URL + '?' + qs.toString());
-  const data = await res.json();
-  if(data && data.error) throw new Error(data.error);
-  return data;
+  return parseApiResponse(res);
 }
 let savingCount = 0;
 function showSaving(){
@@ -872,9 +881,7 @@ async function apiPost(action, body){
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action, ...(body||{}) })
     });
-    const data = await res.json();
-    if(data && data.error) throw new Error(data.error);
-    return data;
+    return await parseApiResponse(res);
   } finally {
     hideSaving();
   }
