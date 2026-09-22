@@ -1137,7 +1137,6 @@ document.querySelectorAll('.nav-btn').forEach(btn=>{
     document.getElementById('page-'+btn.dataset.page).classList.add('active');
     document.getElementById('topbar-current').textContent = pageLabels[btn.dataset.page] || '';
     closeNav();
-    await refreshAll();
     if(btn.dataset.page==='out') renderOut();
     if(btn.dataset.page==='schedule') renderSchedule();
     if(btn.dataset.page==='history') renderHistory();
