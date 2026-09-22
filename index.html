@@ -1080,20 +1080,11 @@ function renderCurrentPage(){
 }
 
 /* ---------- Load everything from the live Sheet ---------- */
-function staggeredGet(action, delayMs){
-  return sleep(delayMs).then(()=> apiGet(action));
-}
 async function refreshAll(){
   setLoading(true);
   try{
-    const [clients, towns, codes, toilets, history, clientDetails] = await Promise.all([
-      staggeredGet('getClients', 0),
-      staggeredGet('getTowns', 80),
-      staggeredGet('getCodes', 160),
-      staggeredGet('getToilets', 240),
-      staggeredGet('getHistory', 320),
-      staggeredGet('getClientDetails', 400),
-    ]);
+    const data = await apiGet('getAll');
+    const { clients, towns, codes, toilets, history, clientDetails } = data || {};
     state.clients = (clients||[]).filter(Boolean).sort();
     state.towns = (towns||[]).filter(Boolean).sort();
     state.codes = (codes||[]).filter(Boolean).sort();
