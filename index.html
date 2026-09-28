@@ -318,6 +318,8 @@
   .hist-item .idot.edited{ background:#8b8fae; }
   .hist-item .itxt{ flex:1; min-width:0; }
   .hist-item .itxt b{ color:var(--navy); }
+  .hist-item .idet{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+  .hist-item .idet a{ color:inherit; }
   .hist-item .itime{ font-size:11.5px; color:var(--ink-soft); margin-top:1px; }
   .hist-del-btn{
     all:unset; cursor:pointer; width:24px; height:24px; border-radius:6px; flex-shrink:0;
@@ -1098,7 +1100,8 @@ async function refreshAll(){
     }));
     state.history = (history||[]).map(h => ({
       id: h['History ID'], type: h['Type'], code: h['Code'], client: h['Client'],
-      town: h['Town'], at: h['Date']
+      town: h['Town'], at: h['Date'],
+      toiletId: h['Toilet ID'] || '', erf: h['Erf'] || '', street: h['Street'] || ''
     }));
   }catch(err){
     toast('Could not reach the Sheet: ' + err.message, true);
@@ -1738,22 +1741,42 @@ document.getElementById('note-save').addEventListener('click', async ()=>{
 });
 
 /* ---------- History page ---------- */
+/* Fills in erf/street/phone for a history entry. Newer entries carry
+   erf/street/Toilet ID themselves; older ones are matched to a toilet
+   record by code + client + town. Phone always comes from the client's
+   current details. */
+function histDetails(h){
+  let erf = h.erf, street = h.street;
+  if(!erf && !street){
+    const rec = (h.toiletId && state.records.find(r => r.id === h.toiletId))
+      || state.records.find(r => r.code === h.code && r.client === h.client && r.town === h.town);
+    if(rec){ erf = rec.erf || ''; street = rec.street || ''; }
+  }
+  const cd = state.clientDetails.find(c => c['Client Name'] === h.client);
+  const phone = cd && cd['Phone'] ? String(cd['Phone']) : '';
+  return { erf: erf ? String(erf) : '', street: street ? String(street) : '', phone };
+}
 function renderHistory(){
   const q = document.getElementById('hist-search').value.trim().toLowerCase();
   const list = document.getElementById('hist-list');
   list.innerHTML = '';
-  let items = state.history;
-  if(q){ items = items.filter(h => (h.code+' '+h.client+' '+h.town+' '+h.type).toLowerCase().includes(q)); }
+  let items = state.history.map(h => Object.assign({}, h, histDetails(h)));
+  if(q){ items = items.filter(h => [h.code,h.client,h.town,h.type,h.erf,h.street,h.phone].join(' ').toLowerCase().includes(q)); }
   document.getElementById('hist-empty').style.display = items.length? 'none':'block';
   const labels = { placed:'placed at', returned:'returned from', edited:'edited &middot; now at' };
   items.slice(0,300).forEach(h=>{
     const div = document.createElement('div');
     div.className = 'hist-item';
     const label = labels[h.type] || h.type;
+    const det = [];
+    if(h.street) det.push(h.street);
+    if(h.erf) det.push('Erf ' + h.erf);
+    if(h.phone) det.push(`&#128222; <a href="tel:${h.phone.replace(/[^0-9+]/g,'')}">${h.phone}</a>`);
     div.innerHTML = `
       <div class="idot ${h.type}"></div>
       <div class="itxt">
         <div><span class="code">${h.code}</span> ${label} <b>${h.client}</b> &middot; ${h.town}</div>
+        ${det.length ? `<div class="idet">${det.join(' &middot; ')}</div>` : ''}
         <div class="itime">${h.at}</div>
       </div>
       <button class="hist-del-btn" data-hist="${h.id}" title="Delete this entry">&#128465;</button>`;
