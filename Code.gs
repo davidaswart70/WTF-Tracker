@@ -30,7 +30,7 @@ function setupSheets() {
   createSheetIfMissing_(ss, SHEET_TOILETS,
     ['Toilet ID', 'Code', 'Client', 'Town', 'Erf', 'Street', 'Placed Date', 'Status', 'Returned Date', 'Scheduled Return Date', 'Note']);
   createSheetIfMissing_(ss, SHEET_HISTORY,
-    ['History ID', 'Type', 'Code', 'Client', 'Town', 'Date', 'Timestamp']);
+    ['History ID', 'Type', 'Code', 'Client', 'Town', 'Date', 'Timestamp', 'Toilet ID', 'Erf', 'Street']);
   const sheet1 = ss.getSheetByName('Sheet1');
   if (sheet1 && ss.getSheets().length > 5) ss.deleteSheet(sheet1);
   SpreadsheetApp.getUi().alert('Setup complete. Tabs ready: Clients, Towns, Codes, Toilets, History.\nNow paste in the data from T-Sites Import FINAL.xlsx.');
@@ -102,6 +102,24 @@ function ensureClientColumns_() {
 }
 
 /* ============================================================
+   SELF-HEALING FIX - adds Toilet ID / Erf / Street columns to
+   History if they're missing, so each log entry can show where
+   the toilet was. Runs automatically on every request.
+   ============================================================ */
+function ensureHistoryColumns_() {
+  const sheet = getSheet_(SHEET_HISTORY);
+  if (!sheet) return;
+  ['Toilet ID', 'Erf', 'Street'].forEach(colName => {
+    const lastCol = sheet.getLastColumn();
+    const headers = sheet.getRange(1, 1, 1, Math.max(lastCol, 1)).getValues()[0];
+    if (headers.indexOf(colName) !== -1) return;
+    const newCol = lastCol + 1;
+    sheet.getRange(1, newCol).setValue(colName);
+    sheet.getRange(1, newCol).setFontWeight('bold').setBackground('#202460').setFontColor('#ffffff');
+  });
+}
+
+/* ============================================================
    SELF-HEALING FIX - adds "Scheduled Return Date" column to
    Toilets if it's missing, runs automatically on every request.
    ============================================================ */
@@ -169,6 +187,7 @@ function doGet(e) {
   ensureClientColumns_();
   dedupeToiletColumns_();
   ensureToiletColumns_();
+  ensureHistoryColumns_();
   const action = e.parameter.action;
   let result;
   try {
@@ -190,6 +209,7 @@ function doPost(e) {
   ensureClientColumns_();
   dedupeToiletColumns_();
   ensureToiletColumns_();
+  ensureHistoryColumns_();
   const body = JSON.parse(e.postData.contents);
   const action = body.action;
   let result;
@@ -395,7 +415,8 @@ function addToilet_(body) {
   const toiletId = 't-' + new Date().getTime();
   const placedDate = body.placedDate || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
   getSheet_(SHEET_TOILETS).appendRow([toiletId, body.code || '', body.client, body.town, body.erf || '', body.street || '', placedDate, 'out', '']);
-  logHistory_('placed', body.code || '(no code yet)', body.client, body.town, placedDate);
+  logHistory_('placed', body.code || '(no code yet)', body.client, body.town, placedDate,
+    { toiletId: toiletId, erf: body.erf, street: body.street });
   return { ok: true, toiletId: toiletId };
 }
 
@@ -429,7 +450,10 @@ function editToilet_(body) {
         sheet.getRange(row, noteCol + 1).setValue(body.note);
       }
       logHistory_('edited', body.code || values[i][codeCol], body.client || values[i][clientCol], body.town || values[i][townCol],
-        Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'));
+        Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
+        { toiletId: body.toiletId,
+          erf: body.erf !== undefined ? body.erf : values[i][erfCol],
+          street: body.street !== undefined ? body.street : values[i][streetCol] });
       return { ok: true };
     }
   }
@@ -448,13 +472,16 @@ function markReturned_(toiletId) {
   const codeCol = headers.indexOf('Code');
   const clientCol = headers.indexOf('Client');
   const townCol = headers.indexOf('Town');
+  const erfCol = headers.indexOf('Erf');
+  const streetCol = headers.indexOf('Street');
   for (let i = 1; i < values.length; i++) {
     if (values[i][idCol] === toiletId) {
       const today = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
       sheet.getRange(i + 1, statusCol + 1).setValue('returned');
       sheet.getRange(i + 1, returnedCol + 1).setValue(today);
       if (scheduledReturnCol !== -1) sheet.getRange(i + 1, scheduledReturnCol + 1).setValue('');
-      logHistory_('returned', values[i][codeCol], values[i][clientCol], values[i][townCol], today);
+      logHistory_('returned', values[i][codeCol], values[i][clientCol], values[i][townCol], today,
+        { toiletId: toiletId, erf: values[i][erfCol], street: values[i][streetCol] });
       return { ok: true };
     }
   }
@@ -475,12 +502,15 @@ function unmarkReturned_(toiletId) {
   const codeCol = headers.indexOf('Code');
   const clientCol = headers.indexOf('Client');
   const townCol = headers.indexOf('Town');
+  const erfCol = headers.indexOf('Erf');
+  const streetCol = headers.indexOf('Street');
   for (let i = 1; i < values.length; i++) {
     if (values[i][idCol] === toiletId) {
       sheet.getRange(i + 1, statusCol + 1).setValue('out');
       sheet.getRange(i + 1, returnedCol + 1).setValue('');
       logHistory_('edited', values[i][codeCol], values[i][clientCol], values[i][townCol],
-        Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'));
+        Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
+        { toiletId: toiletId, erf: values[i][erfCol], street: values[i][streetCol] });
       return { ok: true };
     }
   }
@@ -547,7 +577,18 @@ function deleteHistory_(historyId) {
   throw new Error('History entry not found: ' + historyId);
 }
 
-function logHistory_(type, code, client, town, date) {
-  const historyId = 'h-' + new Date().getTime() + '-' + Math.floor(Math.random() * 1000);
-  getSheet_(SHEET_HISTORY).appendRow([historyId, type, code, client, town, date, new Date()]);
+/* Writes by header name so it works whatever order the History
+   columns are in (older sheets get Toilet ID/Erf/Street appended
+   on the right by ensureHistoryColumns_). */
+function logHistory_(type, code, client, town, date, extra) {
+  extra = extra || {};
+  const sheet = getSheet_(SHEET_HISTORY);
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const byName = {
+    'History ID': 'h-' + new Date().getTime() + '-' + Math.floor(Math.random() * 1000),
+    'Type': type, 'Code': code, 'Client': client, 'Town': town, 'Date': date,
+    'Timestamp': new Date(),
+    'Toilet ID': extra.toiletId || '', 'Erf': extra.erf || '', 'Street': extra.street || ''
+  };
+  sheet.appendRow(headers.map(h => byName[h] !== undefined ? byName[h] : ''));
 }
