@@ -316,6 +316,21 @@
   .hist-item .idot.placed{ background:var(--out); }
   .hist-item .idot.returned{ background:var(--returned); }
   .hist-item .idot.edited{ background:#8b8fae; }
+  .hist-item .idot.undo{ background:#c9a227; }
+  .hist-item.is-undone .itxt > div:first-child{ text-decoration:line-through; opacity:.6; }
+  .hist-item .undone-tag{ display:inline-block; font-size:10.5px; font-weight:700; color:#8a6d00; background:#fff4cc; border-radius:5px; padding:1px 6px; margin-left:6px; text-decoration:none; }
+  .hist-undo-btn{
+    all:unset; cursor:pointer; flex-shrink:0; font-size:12px; font-weight:600; color:var(--navy);
+    border:1.5px solid var(--line); border-radius:7px; padding:3px 9px; white-space:nowrap;
+  }
+  .hist-undo-btn:hover{ border-color:var(--navy); background:var(--periwinkle); }
+  .hu-table{ width:100%; border-collapse:collapse; margin:4px 0 14px; font-size:13px; }
+  .hu-table th, .hu-table td{ text-align:left; padding:7px 6px; border-bottom:1px solid #eef0f3; vertical-align:top; }
+  .hu-table th{ font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em; }
+  .hu-table td.old{ color:var(--ink-soft); text-decoration:line-through; }
+  .hu-table td.new{ font-weight:700; color:var(--navy); }
+  .hu-msg{ font-size:13.5px; line-height:1.5; margin:0 0 12px; }
+  .hu-warn{ font-size:12.5px; color:#a1372b; background:#fdeeee; border-radius:8px; padding:8px 10px; margin:0 0 12px; }
   .hist-item .itxt{ flex:1; min-width:0; }
   .hist-item .itxt b{ color:var(--navy); }
   .hist-item .idet{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
@@ -792,6 +807,19 @@
   </div>
 </div>
 
+<!-- HISTORY UNDO MODAL (Undo button on a History entry) -->
+<div class="modal-backdrop" id="hu-backdrop">
+  <div class="modal">
+    <h2 id="hu-title">Undo this?</h2>
+    <p class="sub" id="hu-sub"></p>
+    <div id="hu-body"></div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" id="hu-cancel">Cancel</button>
+      <button class="btn btn-primary" id="hu-confirm">Yes, undo it</button>
+    </div>
+  </div>
+</div>
+
 <!-- UNDO CONFIRM MODAL -->
 <div class="modal-backdrop" id="undo-backdrop">
   <div class="modal" style="width:420px;">
@@ -1081,6 +1109,11 @@ function renderCurrentPage(){
   if(id==='manage') renderManage();
 }
 
+function parseChanges(raw){
+  if(!raw) return null;
+  try{ return JSON.parse(raw); }catch(e){ return null; }
+}
+
 /* ---------- Load everything from the live Sheet ---------- */
 async function refreshAll(){
   setLoading(true);
@@ -1101,7 +1134,8 @@ async function refreshAll(){
     state.history = (history||[]).map(h => ({
       id: h['History ID'], type: h['Type'], code: h['Code'], client: h['Client'],
       town: h['Town'], at: h['Date'],
-      toiletId: h['Toilet ID'] || '', erf: h['Erf'] || '', street: h['Street'] || ''
+      toiletId: h['Toilet ID'] || '', erf: h['Erf'] || '', street: h['Street'] || '',
+      timestamp: h['Timestamp'] || '', changes: parseChanges(h['Changes']), undone: h['Undone'] || ''
     }));
   }catch(err){
     toast('Could not reach the Sheet: ' + err.message, true);
@@ -1763,11 +1797,16 @@ function renderHistory(){
   let items = state.history.map(h => Object.assign({}, h, histDetails(h)));
   if(q){ items = items.filter(h => [h.code,h.client,h.town,h.type,h.erf,h.street,h.phone].join(' ').toLowerCase().includes(q)); }
   document.getElementById('hist-empty').style.display = items.length? 'none':'block';
-  const labels = { placed:'placed at', returned:'returned from', edited:'edited &middot; now at' };
+  const labels = { placed:'placed at', returned:'returned from', edited:'edited &middot; now at', undo:'undo &middot;' };
+  const undidLabels = { placed:'removed placement at', returned:'back out at', edited:'reverted edit at' };
   items.slice(0,300).forEach(h=>{
     const div = document.createElement('div');
     div.className = 'hist-item';
-    const label = labels[h.type] || h.type;
+    let label = labels[h.type] || h.type;
+    if(h.type==='undo' && h.changes && undidLabels[h.changes._undid]) label = 'undo &middot; ' + undidLabels[h.changes._undid];
+    if(h.undone) div.classList.add('is-undone');
+    const canUndo = !h.undone && ['placed','returned','edited'].includes(h.type);
+    const changeTxt = (h.changes && (h.type==='edited' || (h.type==='undo' && h.changes._undid!=='placed'))) ? changesSummary(h.changes) : '';
     const det = [];
     if(h.street) det.push(h.street);
     if(h.erf) det.push('Erf ' + h.erf);
@@ -1776,11 +1815,16 @@ function renderHistory(){
       <div class="idot ${h.type}"></div>
       <div class="itxt">
         <div><span class="code">${h.code}</span> ${label} <b>${h.client}</b> &middot; ${h.town}</div>
+        ${changeTxt ? `<div class="idet">${changeTxt}</div>` : ''}
         ${det.length ? `<div class="idet">${det.join(' &middot; ')}</div>` : ''}
-        <div class="itime">${h.at}</div>
+        <div class="itime">${h.at}${h.undone ? '<span class="undone-tag">Undone</span>' : ''}</div>
       </div>
+      ${canUndo ? `<button class="hist-undo-btn" data-undo="${h.id}" title="Undo this">&#8630; Undo</button>` : ''}
       <button class="hist-del-btn" data-hist="${h.id}" title="Delete this entry">&#128465;</button>`;
     list.appendChild(div);
+  });
+  list.querySelectorAll('.hist-undo-btn').forEach(b=>{
+    b.addEventListener('click', ()=> openHistUndo(b.dataset.undo));
   });
   list.querySelectorAll('.hist-del-btn').forEach(b=>{
     b.addEventListener('click', async ()=>{
@@ -1800,6 +1844,104 @@ function renderHistory(){
   });
 }
 document.getElementById('hist-search').addEventListener('input', renderHistory);
+
+/* ---------- Undo a single History entry ---------- */
+function escHtml(v){
+  return String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function showVal(v){ return v==='' || v==null ? '<i>(empty)</i>' : escHtml(v); }
+function changesSummary(ch){
+  return Object.keys(ch).filter(k=>k[0]!=='_').map(k =>
+    `${escHtml(k)}: ${showVal(ch[k][0])} &rarr; ${showVal(ch[k][1])}`).join(' &middot; ');
+}
+function fmtWhen(h){
+  const d = h.timestamp ? new Date(h.timestamp) : null;
+  if(d && !isNaN(d)) return d.toLocaleString('en-ZA', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  return h.at || '';
+}
+/* Same matching the backend uses: Toilet ID, else a unique code+client+town match. */
+function histToilet(h){
+  if(h.toiletId) return state.records.find(r => r.id === h.toiletId) || null;
+  const m = state.records.filter(r => r.code===h.code && r.client===h.client && r.town===h.town);
+  return m.length===1 ? m[0] : null;
+}
+const recField = { 'Code':'code','Client':'client','Town':'town','Erf':'erf','Street':'street',
+  'Placed Date':'placedDate','Status':'status','Returned Date':'returnedDate',
+  'Scheduled Return Date':'scheduledReturn','Note':'note' };
+
+let histUndoId = null;
+function openHistUndo(id){
+  const h = state.history.find(x=>x.id===id);
+  if(!h) return;
+  histUndoId = id;
+  const rec = histToilet(h);
+  const what = { placed:'was placed at', returned:'was returned from', edited:'was edited' }[h.type];
+  document.getElementById('hu-title').textContent = 'Undo: ' + h.code + ' ' + what + (h.type==='edited' ? '' : ' ' + h.client);
+  document.getElementById('hu-sub').textContent = fmtWhen(h) + ' \u00b7 ' + h.client + ' \u00b7 ' + h.town;
+  const body = document.getElementById('hu-body');
+  const confirmBtn = document.getElementById('hu-confirm');
+  let html = '';
+  let ok = true;
+  const row = (f, now, after) => `<tr><td>${escHtml(f)}</td><td class="old">${showVal(now)}</td><td class="new">${showVal(after)}</td></tr>`;
+  const table = rows => `<table class="hu-table"><thead><tr><th>Field</th><th>Now</th><th>After undo</th></tr></thead><tbody>${rows}</tbody></table>`;
+
+  if(!rec){
+    ok = false;
+    html = `<p class="hu-warn">Can't find the toilet this entry belongs to - it may have been deleted, or more than one toilet matches it.</p>`;
+  }else if(h.type==='placed'){
+    html = `<p class="hu-msg">What happened: <b>${escHtml(h.code)}</b> was placed at <b>${escHtml(h.client)}</b> (${escHtml(h.town)}${rec.street?', '+escHtml(rec.street):''}${rec.erf?', Erf '+escHtml(rec.erf):''}) on ${escHtml(rec.placedDate||h.at)}.</p>
+      <p class="hu-msg">Undo will <b>delete this toilet record completely</b>, as if it was never added.</p>`;
+    if(rec.status==='returned') html += `<p class="hu-warn">Note: this toilet has since been returned (${escHtml(rec.returnedDate)}). Deleting it also removes that.</p>`;
+  }else{
+    let ch = h.changes;
+    if(!ch && h.type==='returned') ch = { 'Status':['out','returned'], 'Returned Date':['', rec.returnedDate] };
+    if(!ch){
+      ok = false;
+      html = `<p class="hu-warn">This edit was saved before undo was added, so the old values weren't recorded. Change it by hand on the Currently Out page instead.</p>`;
+    }else{
+      html = `<p class="hu-msg">What happened: ${h.type==='returned' ? `<b>${escHtml(h.code)}</b> was marked returned from <b>${escHtml(h.client)}</b>.` : changesSummary(ch)}</p>`;
+      const rows = Object.keys(ch).filter(k=>k[0]!=='_').map(k => {
+        const now = rec[recField[k]] == null ? '' : String(rec[recField[k]]);
+        return now === ch[k][0] ? '' : row(k, now, ch[k][0]);
+      }).join('');
+      if(rows){
+        html += `<p class="hu-msg">Undo will change:</p>` + table(rows);
+        const later = Object.keys(ch).some(k => k[0]!=='_' && String(rec[recField[k]]||'') !== ch[k][1]);
+        if(later) html += `<p class="hu-warn">Some of these have been changed again since. Undo puts back the values from before this entry.</p>`;
+      }else{
+        ok = false;
+        html += `<p class="hu-warn">Nothing to undo - the toilet already has the old values.</p>`;
+      }
+    }
+  }
+  body.innerHTML = html;
+  confirmBtn.style.display = ok ? '' : 'none';
+  document.getElementById('hu-cancel').textContent = ok ? 'Cancel' : 'Close';
+  document.getElementById('hu-backdrop').classList.add('open');
+}
+function closeHistUndo(){
+  histUndoId = null;
+  document.getElementById('hu-backdrop').classList.remove('open');
+}
+document.getElementById('hu-cancel').addEventListener('click', closeHistUndo);
+document.getElementById('hu-backdrop').addEventListener('click', (e)=>{
+  if(e.target.id==='hu-backdrop') closeHistUndo();
+});
+document.getElementById('hu-confirm').addEventListener('click', async ()=>{
+  const id = histUndoId;
+  if(!id) return;
+  setLoading(true);
+  try{
+    await apiPost('undoHistory', { historyId: id });
+    toast('Undone');
+    closeHistUndo();
+    await refreshAll();
+    renderHistory();
+  }catch(err){
+    toast('Could not undo: '+err.message, true);
+  }
+  setLoading(false);
+});
 
 /* ---------- Manage page ---------- */
 function renderManage(){
