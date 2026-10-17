@@ -30,7 +30,7 @@ function setupSheets() {
   createSheetIfMissing_(ss, SHEET_TOILETS,
     ['Toilet ID', 'Code', 'Client', 'Town', 'Erf', 'Street', 'Placed Date', 'Status', 'Returned Date', 'Scheduled Return Date', 'Note']);
   createSheetIfMissing_(ss, SHEET_HISTORY,
-    ['History ID', 'Type', 'Code', 'Client', 'Town', 'Date', 'Timestamp', 'Toilet ID', 'Erf', 'Street']);
+    ['History ID', 'Type', 'Code', 'Client', 'Town', 'Date', 'Timestamp', 'Toilet ID', 'Erf', 'Street', 'Changes', 'Undone']);
   const sheet1 = ss.getSheetByName('Sheet1');
   if (sheet1 && ss.getSheets().length > 5) ss.deleteSheet(sheet1);
   SpreadsheetApp.getUi().alert('Setup complete. Tabs ready: Clients, Towns, Codes, Toilets, History.\nNow paste in the data from T-Sites Import FINAL.xlsx.');
@@ -102,14 +102,15 @@ function ensureClientColumns_() {
 }
 
 /* ============================================================
-   SELF-HEALING FIX - adds Toilet ID / Erf / Street columns to
-   History if they're missing, so each log entry can show where
-   the toilet was. Runs automatically on every request.
+   SELF-HEALING FIX - adds Toilet ID / Erf / Street / Changes /
+   Undone columns to History if they're missing, so each log entry
+   can show where the toilet was, what changed, and whether it has
+   been undone. Runs automatically on every request.
    ============================================================ */
 function ensureHistoryColumns_() {
   const sheet = getSheet_(SHEET_HISTORY);
   if (!sheet) return;
-  ['Toilet ID', 'Erf', 'Street'].forEach(colName => {
+  ['Toilet ID', 'Erf', 'Street', 'Changes', 'Undone'].forEach(colName => {
     const lastCol = sheet.getLastColumn();
     const headers = sheet.getRange(1, 1, 1, Math.max(lastCol, 1)).getValues()[0];
     if (headers.indexOf(colName) !== -1) return;
@@ -228,6 +229,7 @@ function doPost(e) {
       case 'deleteTown': result = deleteTown_(body.name); break;
       case 'deleteCode': result = deleteCode_(body.name); break;
       case 'deleteHistory': result = deleteHistory_(body.historyId); break;
+      case 'undoHistory': result = undoHistory_(body.historyId); break;
       default: result = { error: 'Unknown action: ' + action };
     }
   } catch (err) { result = { error: err.message }; }
@@ -437,6 +439,22 @@ function editToilet_(body) {
   for (let i = 1; i < values.length; i++) {
     if (values[i][idCol] === body.toiletId) {
       const row = i + 1;
+      // Remember old -> new for every field this edit actually writes,
+      // so the History tab can show it and undo it later.
+      const changes = {};
+      const track = (colName, col, applies, newVal) => {
+        if (!applies || col === -1) return;
+        const oldVal = cellStr_(values[i][col]);
+        if (oldVal !== String(newVal)) changes[colName] = [oldVal, String(newVal)];
+      };
+      track('Code', codeCol, !!body.code, body.code);
+      track('Client', clientCol, !!body.client, body.client);
+      track('Town', townCol, !!body.town, body.town);
+      track('Erf', erfCol, body.erf !== undefined, body.erf);
+      track('Street', streetCol, body.street !== undefined, body.street);
+      track('Placed Date', dateCol, !!body.placedDate, body.placedDate);
+      track('Scheduled Return Date', scheduledReturnCol, body.scheduledReturn !== undefined, body.scheduledReturn);
+      track('Note', noteCol, body.note !== undefined, body.note);
       if (body.code) { addCode_(body.code); sheet.getRange(row, codeCol + 1).setValue(body.code); }
       if (body.client) { addClient_(body.client); sheet.getRange(row, clientCol + 1).setValue(body.client); }
       if (body.town) { addTown_(body.town); sheet.getRange(row, townCol + 1).setValue(body.town); }
@@ -453,7 +471,8 @@ function editToilet_(body) {
         Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
         { toiletId: body.toiletId,
           erf: body.erf !== undefined ? body.erf : values[i][erfCol],
-          street: body.street !== undefined ? body.street : values[i][streetCol] });
+          street: body.street !== undefined ? body.street : values[i][streetCol],
+          changes: changes });
       return { ok: true };
     }
   }
@@ -480,8 +499,15 @@ function markReturned_(toiletId) {
       sheet.getRange(i + 1, statusCol + 1).setValue('returned');
       sheet.getRange(i + 1, returnedCol + 1).setValue(today);
       if (scheduledReturnCol !== -1) sheet.getRange(i + 1, scheduledReturnCol + 1).setValue('');
+      const changes = {
+        'Status': [cellStr_(values[i][statusCol]), 'returned'],
+        'Returned Date': [cellStr_(values[i][returnedCol]), today]
+      };
+      if (scheduledReturnCol !== -1 && cellStr_(values[i][scheduledReturnCol])) {
+        changes['Scheduled Return Date'] = [cellStr_(values[i][scheduledReturnCol]), ''];
+      }
       logHistory_('returned', values[i][codeCol], values[i][clientCol], values[i][townCol], today,
-        { toiletId: toiletId, erf: values[i][erfCol], street: values[i][streetCol] });
+        { toiletId: toiletId, erf: values[i][erfCol], street: values[i][streetCol], changes: changes });
       return { ok: true };
     }
   }
@@ -510,7 +536,9 @@ function unmarkReturned_(toiletId) {
       sheet.getRange(i + 1, returnedCol + 1).setValue('');
       logHistory_('edited', values[i][codeCol], values[i][clientCol], values[i][townCol],
         Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
-        { toiletId: toiletId, erf: values[i][erfCol], street: values[i][streetCol] });
+        { toiletId: toiletId, erf: values[i][erfCol], street: values[i][streetCol],
+          changes: { 'Status': [cellStr_(values[i][statusCol]), 'out'],
+                     'Returned Date': [cellStr_(values[i][returnedCol]), ''] } });
       return { ok: true };
     }
   }
@@ -588,7 +616,101 @@ function logHistory_(type, code, client, town, date, extra) {
     'History ID': 'h-' + new Date().getTime() + '-' + Math.floor(Math.random() * 1000),
     'Type': type, 'Code': code, 'Client': client, 'Town': town, 'Date': date,
     'Timestamp': new Date(),
-    'Toilet ID': extra.toiletId || '', 'Erf': extra.erf || '', 'Street': extra.street || ''
+    'Toilet ID': extra.toiletId || '', 'Erf': extra.erf || '', 'Street': extra.street || '',
+    'Changes': extra.changes && Object.keys(extra.changes).length ? JSON.stringify(extra.changes) : ''
   };
   sheet.appendRow(headers.map(h => byName[h] !== undefined ? byName[h] : ''));
+  return byName['History ID'];
+}
+
+/* Sheet cell -> plain string, with dates as yyyy-MM-dd (same format
+   the app writes), so old/new values compare and restore cleanly. */
+function cellStr_(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  return v === null || v === undefined ? '' : String(v);
+}
+
+/* Undoes one History entry (the per-row Undo button on the History tab):
+     placed   -> deletes that toilet record
+     returned -> puts the toilet back out (restores scheduled return too)
+     edited   -> puts back the old values saved in its Changes column
+   Logs an 'undo' entry and stamps the original entry's Undone column so
+   it can't be undone twice. Older entries logged before Changes/Toilet ID
+   existed are matched by code + client + town where that's unambiguous. */
+function undoHistory_(historyId) {
+  if (!historyId) throw new Error('historyId is required');
+  const hSheet = getSheet_(SHEET_HISTORY);
+  const hValues = hSheet.getDataRange().getValues();
+  const hHeaders = hValues[0];
+  const hCol = name => hHeaders.indexOf(name);
+  let hRow = -1;
+  for (let i = 1; i < hValues.length; i++) {
+    if (hValues[i][hCol('History ID')] === historyId) { hRow = i; break; }
+  }
+  if (hRow === -1) throw new Error('History entry not found: ' + historyId);
+  const h = {};
+  hHeaders.forEach((name, i) => { h[name] = hValues[hRow][i]; });
+  if (h['Undone']) throw new Error('This entry has already been undone');
+  if (['placed', 'returned', 'edited'].indexOf(h['Type']) === -1) {
+    throw new Error('This type of entry cannot be undone');
+  }
+  let changes = null;
+  if (h['Changes']) { try { changes = JSON.parse(h['Changes']); } catch (e) { changes = null; } }
+  if (h['Type'] === 'edited' && !changes) {
+    throw new Error('This edit was logged before undo was added, so the old values were not saved');
+  }
+
+  const tSheet = getSheet_(SHEET_TOILETS);
+  const tValues = tSheet.getDataRange().getValues();
+  const tHeaders = tValues[0];
+  const tCol = name => tHeaders.indexOf(name);
+  let tRow = -1;
+  if (h['Toilet ID']) {
+    for (let i = 1; i < tValues.length; i++) {
+      if (tValues[i][tCol('Toilet ID')] === h['Toilet ID']) { tRow = i; break; }
+    }
+  } else {
+    const matches = [];
+    for (let i = 1; i < tValues.length; i++) {
+      if (tValues[i][tCol('Code')] === h['Code'] && tValues[i][tCol('Client')] === h['Client'] &&
+          tValues[i][tCol('Town')] === h['Town']) matches.push(i);
+    }
+    if (matches.length > 1) throw new Error('More than one toilet matches this entry - change it by hand instead');
+    if (matches.length === 1) tRow = matches[0];
+  }
+  if (tRow === -1) throw new Error('The toilet for this entry no longer exists');
+  const t = tValues[tRow];
+  const toiletId = t[tCol('Toilet ID')];
+  const done = {};
+
+  if (h['Type'] === 'placed') {
+    tHeaders.forEach((name, i) => { if (name && cellStr_(t[i])) done[name] = [cellStr_(t[i]), '']; });
+    tSheet.deleteRow(tRow + 1);
+  } else {
+    if (!changes) {
+      // legacy 'returned' entry - no saved Changes, so just put it back out
+      if (t[tCol('Status')] !== 'returned') throw new Error('This toilet is not marked returned any more');
+      changes = { 'Status': ['out', 'returned'], 'Returned Date': ['', cellStr_(t[tCol('Returned Date')])] };
+    }
+    Object.keys(changes).forEach(name => {
+      const col = tCol(name);
+      if (col === -1) return;
+      const oldVal = changes[name][0];
+      const nowVal = cellStr_(t[col]);
+      if (nowVal === oldVal) return;
+      if (name === 'Code' && oldVal) addCode_(oldVal);
+      if (name === 'Client' && oldVal) addClient_(oldVal);
+      if (name === 'Town' && oldVal) addTown_(oldVal);
+      tSheet.getRange(tRow + 1, col + 1).setValue(oldVal);
+      done[name] = [nowVal, oldVal];
+    });
+    if (!Object.keys(done).length) throw new Error('Nothing to undo - the toilet already has the old values');
+  }
+  done._undid = h['Type'];
+
+  const undoId = logHistory_('undo', t[tCol('Code')], t[tCol('Client')], t[tCol('Town')],
+    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'),
+    { toiletId: toiletId, erf: t[tCol('Erf')], street: t[tCol('Street')], changes: done });
+  hSheet.getRange(hRow + 1, hCol('Undone') + 1).setValue(undoId);
+  return { ok: true, undoId: undoId, changes: done };
 }
