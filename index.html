@@ -343,6 +343,36 @@
   }
   .hist-del-btn:hover{ background:#fbe4e4; color:#c23b3b; opacity:1; }
 
+  /* Secret analytics tab */
+  nav button.nav-secret{ justify-content:center; letter-spacing:.35em; font-size:16px; opacity:.45; padding:6px 12px; margin-top:6px; }
+  nav button.nav-secret:hover{ opacity:.9; }
+  .an-head{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .an-kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-bottom:18px; }
+  .an-kpis .kpi .sub{ font-size:11.5px; color:var(--ink-soft); margin-top:2px; }
+  .an-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .an-grid .card{ margin-bottom:0; min-width:0; }
+  .an-grid .wide{ grid-column:1 / -1; }
+  .an-card h3{ margin:0 0 2px; font-size:15px; color:var(--navy); }
+  .an-card .an-sub{ margin:0 0 12px; font-size:12.5px; color:var(--ink-soft); }
+  .an-legend{ display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:var(--ink-soft); margin-bottom:8px; }
+  .an-legend i{ display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+  .an-chart svg{ display:block; width:100%; height:auto; overflow:visible; }
+  .an-chart text{ font-family:'Inter',system-ui,sans-serif; }
+  .an-chart .hit{ cursor:default; }
+  .an-chart .hit:hover ~ *{ }
+  .an-tip{ position:fixed; z-index:500; pointer-events:none; background:#fff; border-radius:8px; box-shadow:0 4px 16px rgba(20,24,60,.22);
+    padding:8px 10px; font-size:12.5px; color:var(--ink); display:none; max-width:260px; line-height:1.45; }
+  .an-tip b{ color:var(--navy); }
+  .an-tip .row{ display:flex; align-items:center; gap:6px; }
+  .an-tip .row i{ width:9px; height:9px; border-radius:2px; flex-shrink:0; }
+  .an-table{ width:100%; border-collapse:collapse; font-size:13px; }
+  .an-table th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft); padding:6px 8px; border-bottom:1px solid var(--line); }
+  .an-table td{ padding:7px 8px; border-bottom:1px solid #eef0f3; }
+  .an-table td.num, .an-table th.num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .an-scroll{ max-height:420px; overflow:auto; -webkit-overflow-scrolling:touch; }
+  .an-scroll .an-table{ min-width:620px; }
+  @media (max-width: 900px){ .an-grid{ grid-template-columns:1fr; } }
+
   section.page{ display:none; }
   section.page.active{ display:block; }
 
@@ -513,6 +543,7 @@
         <button class="nav-btn" data-page="schedule"><span class="dot"></span> Delivery Schedule</button>
         <button class="nav-btn" data-page="history"><span class="dot"></span> History</button>
         <button class="nav-btn" data-page="manage"><span class="dot"></span> Clients, Towns &amp; Codes</button>
+        <button class="nav-secret" id="nav-secret" title="">&bull;&bull;&bull;</button>
       </nav>
       <div class="side-foot">Connected to your live Google Sheet.<br>Every action here updates the Sheet directly.</div>
     </div>
@@ -694,6 +725,68 @@
       </div>
     </section>
 
+    <!-- ANALYTICS (secret tab behind the three dots) -->
+    <section class="page" id="page-analytics">
+      <div class="page-head an-head">
+        <div>
+          <h1>Analytics</h1>
+          <p id="an-updated">Latest data from the Sheet.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="an-refresh">&#8635; Refresh data</button>
+      </div>
+      <div class="an-kpis" id="an-kpis"></div>
+      <div class="an-grid">
+        <div class="card an-card wide">
+          <h3>Placed vs returned per week</h3>
+          <p class="an-sub">Last 12 weeks, by placed date and returned date</p>
+          <div class="an-legend"><span><i style="background:#2a78d6"></i>Placed</span><span><i style="background:#eb6834"></i>Returned</span></div>
+          <div class="an-chart" id="an-weekly"></div>
+        </div>
+        <div class="card an-card">
+          <h3>Toilets out by town</h3>
+          <p class="an-sub">Split by how long they have been out</p>
+          <div class="an-legend" id="an-age-legend"></div>
+          <div class="an-chart" id="an-towns"></div>
+        </div>
+        <div class="card an-card">
+          <h3>Clients with the most toilets out</h3>
+          <p class="an-sub">Top 15 clients, split by how long they have been out</p>
+          <div class="an-legend" id="an-age-legend2"></div>
+          <div class="an-chart" id="an-clients"></div>
+        </div>
+        <div class="card an-card">
+          <h3>How long toilets have been out</h3>
+          <p class="an-sub">Number of toilets out, by time since placed</p>
+          <div class="an-chart" id="an-ages"></div>
+        </div>
+        <div class="card an-card">
+          <h3>Toilet types out</h3>
+          <p class="an-sub">By code prefix (e.g. bpn, sanit)</p>
+          <div class="an-chart" id="an-types"></div>
+        </div>
+        <div class="card an-card">
+          <h3>Clients with the longest average time out</h3>
+          <p class="an-sub">Clients with 2 or more toilets out</p>
+          <div class="an-chart" id="an-clientage"></div>
+        </div>
+        <div class="card an-card">
+          <h3>Busiest towns in the last 3 months</h3>
+          <p class="an-sub">Toilets placed per town in the last 90 days</p>
+          <div class="an-chart" id="an-recent"></div>
+        </div>
+        <div class="card an-card wide">
+          <h3>Longest out</h3>
+          <p class="an-sub">The 25 toilets that have been out the longest</p>
+          <div class="an-scroll"><table class="an-table" id="an-longest"></table></div>
+        </div>
+        <div class="card an-card wide">
+          <h3>Every town</h3>
+          <p class="an-sub">All towns with toilets out</p>
+          <div class="an-scroll"><table class="an-table" id="an-towntable"></table></div>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -819,6 +912,19 @@
     </div>
   </div>
 </div>
+
+<!-- ANALYTICS GATE (three dots in the menu) -->
+<div class="modal-backdrop" id="an-backdrop">
+  <div class="modal" style="width:380px;">
+    <h2>Do you want to see analytics?</h2>
+    <p class="sub">This loads the newest data from the Google Sheet.</p>
+    <div class="form-actions">
+      <button class="btn btn-ghost" id="an-no">No</button>
+      <button class="btn btn-primary" id="an-yes">Yes, show me</button>
+    </div>
+  </div>
+</div>
+<div class="an-tip" id="an-tip"></div>
 
 <!-- UNDO CONFIRM MODAL -->
 <div class="modal-backdrop" id="undo-backdrop">
@@ -1107,6 +1213,7 @@ function renderCurrentPage(){
   if(id==='schedule') renderSchedule();
   if(id==='history') renderHistory();
   if(id==='manage') renderManage();
+  if(id==='analytics') renderAnalytics();
 }
 
 function parseChanges(raw){
@@ -1146,7 +1253,7 @@ async function refreshAll(){
 /* ---------- Navigation ---------- */
 const pageLabels = {
   add: 'Add Toilet', out: 'Currently Out', schedule: 'Delivery Schedule',
-  history: 'History', manage: 'Clients, Towns & Codes'
+  history: 'History', manage: 'Clients, Towns & Codes', analytics: 'Analytics'
 };
 
 function openNav(){ document.getElementById('nav-backdrop').classList.add('open'); }
@@ -1942,6 +2049,289 @@ document.getElementById('hu-confirm').addEventListener('click', async ()=>{
   }
   setLoading(false);
 });
+
+/* ---------- Analytics (secret tab behind the three dots) ---------- */
+const AN_BLUE = '#2a78d6', AN_ORANGE = '#eb6834';
+// how long a toilet has been out: light -> dark blue
+const AN_AGES = [
+  { key:'a1', label:'0–30 days',   max:30,       color:'#86b6ef' },
+  { key:'a2', label:'1–6 months',  max:182,      color:'#3987e5' },
+  { key:'a3', label:'6–12 months', max:365,      color:'#1c5cab' },
+  { key:'a4', label:'Over a year', max:Infinity, color:'#0d366b' }
+];
+let anUpdatedAt = null;
+
+document.getElementById('nav-secret').addEventListener('click', ()=>{
+  closeNav();
+  document.getElementById('an-backdrop').classList.add('open');
+});
+function closeAnGate(){ document.getElementById('an-backdrop').classList.remove('open'); }
+document.getElementById('an-no').addEventListener('click', closeAnGate);
+document.getElementById('an-backdrop').addEventListener('click', e=>{ if(e.target.id==='an-backdrop') closeAnGate(); });
+document.getElementById('an-yes').addEventListener('click', async ()=>{
+  closeAnGate();
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-analytics').classList.add('active');
+  document.getElementById('topbar-current').textContent = pageLabels.analytics;
+  await refreshAnalytics();
+});
+document.getElementById('an-refresh').addEventListener('click', refreshAnalytics);
+async function refreshAnalytics(){
+  showSaving();
+  try{ await refreshAll(); anUpdatedAt = new Date(); }
+  finally{ hideSaving(); }
+  renderAnalytics();
+}
+
+/* Dates in the sheet are yyyy-mm-dd, or month-first m/d/yy on old imported rows */
+function anDate(v){
+  if(!v) return null;
+  const s = String(v).trim();
+  let m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s);
+  if(m){ const y = +m[1]; return y < 2000 ? null : new Date(y, +m[2]-1, +m[3]); }
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/.exec(s);
+  if(m){ let y = +m[3]; if(y < 100) y += 2000; return new Date(y, +m[1]-1, +m[2]); }
+  return null;
+}
+function anDays(d){ return d ? Math.max(0, Math.round((Date.now() - d.getTime()) / 86400000)) : null; }
+function anAge(days){ return days==null ? null : AN_AGES.find(a => days <= a.max); }
+function anAgeText(days){
+  if(days==null) return 'unknown';
+  if(days < 60) return days + (days===1 ? ' day' : ' days');
+  if(days < 730) return Math.round(days/30.4) + ' months';
+  return (days/365).toFixed(1) + ' years';
+}
+function anFmt(n){ return Number(n).toLocaleString('en-ZA'); }
+
+/* tooltip */
+const anTip = document.getElementById('an-tip');
+function anShowTip(e, html){
+  anTip.innerHTML = html; anTip.style.display = 'block';
+  const w = anTip.offsetWidth, h = anTip.offsetHeight;
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if(x + w > window.innerWidth - 8) x = e.clientX - w - 14;
+  if(y + h > window.innerHeight - 8) y = e.clientY - h - 14;
+  anTip.style.left = x + 'px'; anTip.style.top = y + 'px';
+}
+function anHideTip(){ anTip.style.display = 'none'; }
+function anBindTips(el, tips){
+  el.querySelectorAll('[data-tip]').forEach(n=>{
+    const html = tips[+n.dataset.tip];
+    n.addEventListener('mousemove', e=>anShowTip(e, html));
+    n.addEventListener('mouseleave', anHideTip);
+    n.addEventListener('click', e=>anShowTip(e, html));
+  });
+}
+// a clean axis step (1, 2, 5, 10, 20, 25, 50...) so ticks read 0 / 10 / 20 / 30 / 40
+function anNiceStep(max){
+  const raw = Math.max(1, max / 4), p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+  return Math.max(1, (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p);
+}
+// draw at the element's real width so text stays the same size on every screen
+function anWidth(el){ return Math.max(300, Math.round(el.clientWidth || 560)); }
+// a bar with a 4px rounded end, square at the baseline
+function anBarPath(x, y, w, h, horizontal){
+  const r = Math.min(4, horizontal ? w : h, horizontal ? h/2 : w/2);
+  if(w <= 0 || h <= 0) return '';
+  if(horizontal) return `M${x},${y}h${w-r}a${r},${r} 0 0 1 ${r},${r}v${h-2*r}a${r},${r} 0 0 1 -${r},${r}h-${w-r}z`;
+  return `M${x},${y+h}v-${h-r}a${r},${r} 0 0 1 ${r},-${r}h${w-2*r}a${r},${r} 0 0 1 ${r},${r}v${h-r}z`;
+}
+
+/* Horizontal bars. rows: [{label, segs:[{v, color, name}], tip}] */
+function anHBars(el, rows, opts){
+  opts = opts || {};
+  if(!rows.length){ el.innerHTML = '<div class="empty">No data</div>'; return; }
+  const W = anWidth(el), labelW = Math.min(opts.labelW || 170, Math.round(W * 0.38)), rowH = 26, barH = 16, padR = 44, top = 4;
+  const total = r => r.segs.reduce((a,s)=>a+s.v, 0);
+  const max = Math.max(...rows.map(total)) || 1;
+  const plotW = W - labelW - padR;
+  const H = top + rows.length * rowH + 4;
+  const tips = [];
+  let out = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${escHtml(opts.title||'bar chart')}">`;
+  rows.forEach((r, i)=>{
+    const y = top + i * rowH, by = y + (rowH - barH) / 2;
+    const maxChars = Math.floor(labelW / 6.6);
+    const name = r.label.length > maxChars ? r.label.slice(0, maxChars - 1) + '…' : r.label;
+    out += `<text x="${labelW - 8}" y="${by + barH/2}" dy="0.35em" text-anchor="end" font-size="12" fill="#3b4150">${escHtml(name)}</text>`;
+    let x = labelW;
+    const tot = total(r), segs = r.segs.filter(s => s.v > 0);
+    segs.forEach((s, k)=>{
+      let w = s.v / max * plotW;
+      const last = k === segs.length - 1;
+      const gap = last ? 0 : 2;
+      const d = last ? anBarPath(x, by, Math.max(w - gap, 1), barH, true)
+                     : `M${x},${by}h${Math.max(w-gap,1)}v${barH}h-${Math.max(w-gap,1)}z`;
+      out += `<path d="${d}" fill="${s.color}"/>`;
+      x += w;
+    });
+    out += `<text x="${x + 6}" y="${by + barH/2}" dy="0.35em" font-size="12" font-weight="600" fill="#1d2033">${opts.fmt ? opts.fmt(tot) : anFmt(tot)}</text>`;
+    tips.push(r.tip);
+    out += `<rect class="hit" data-tip="${i}" x="0" y="${y}" width="${W}" height="${rowH}" fill="transparent"/>`;
+  });
+  out += '</svg>';
+  el.innerHTML = out;
+  anBindTips(el, tips);
+}
+
+/* Columns. groups: [{label, vals:[v...], tip}], colors: [..] */
+function anColumns(el, groups, colors, opts){
+  opts = opts || {};
+  const W = anWidth(el), H = 230, padL = 34, padB = 26, top = 10;
+  const plotW = W - padL - 6, plotH = H - top - padB;
+  const step = anNiceStep(Math.max(1, ...groups.flatMap(g => g.vals)));
+  const ticks = Math.ceil(Math.max(1, ...groups.flatMap(g => g.vals)) / step);
+  const max = step * ticks;
+  const slot = plotW / groups.length, n = colors.length;
+  const colW = Math.max(4, Math.min(24, (slot * 0.7 - 2 * (n - 1)) / n));
+  // skip x labels when they would collide (about 52px per label)
+  const labelEvery = Math.max(1, Math.ceil(52 / slot));
+  const tips = [];
+  let out = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${escHtml(opts.title||'column chart')}">`;
+  for(let t = 0; t <= ticks; t++){
+    const v = step * t, y = top + plotH - plotH * t / ticks;
+    out += `<line x1="${padL}" x2="${W-6}" y1="${y}" y2="${y}" stroke="${t===0?'#c9d1da':'#eceef2'}" stroke-width="1"/>`;
+    out += `<text x="${padL - 6}" y="${y}" dy="0.35em" text-anchor="end" font-size="11" fill="#5b6270">${anFmt(v)}</text>`;
+  }
+  groups.forEach((g, i)=>{
+    const cx = padL + slot * i + slot / 2, groupW = n * colW + (n - 1) * 2;
+    g.vals.forEach((v, k)=>{
+      const h = v / max * plotH, x = cx - groupW/2 + k * (colW + 2);
+      if(v > 0) out += `<path d="${anBarPath(x, top + plotH - h, colW, h, false)}" fill="${colors[k]}"/>`;
+    });
+    if(i % labelEvery === 0)
+      out += `<text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="11" fill="#5b6270">${escHtml(g.label)}</text>`;
+    tips.push(g.tip);
+    out += `<rect class="hit" data-tip="${i}" x="${padL + slot*i}" y="${top}" width="${slot}" height="${plotH}" fill="transparent"/>`;
+  });
+  out += '</svg>';
+  el.innerHTML = out;
+  anBindTips(el, tips);
+}
+
+function anAgeTip(title, list){
+  const counts = AN_AGES.map(a => list.filter(x => x.age === a).length);
+  return `<b>${escHtml(title)}</b><br>${anFmt(list.length)} toilet${list.length===1?'':'s'} out` +
+    AN_AGES.map((a,k)=> counts[k] ? `<div class="row"><i style="background:${a.color}"></i>${a.label}: ${counts[k]}</div>` : '').join('');
+}
+function anAgeSegs(list){ return AN_AGES.map(a => ({ v: list.filter(x => x.age === a).length, color: a.color, name: a.label })); }
+function anGroup(list, keyFn){
+  const m = new Map();
+  list.forEach(x => { const k = keyFn(x) || '(none)'; if(!m.has(k)) m.set(k, []); m.get(k).push(x); });
+  return [...m.entries()].sort((a,b)=> b[1].length - a[1].length);
+}
+
+let anResizeTm = null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(anResizeTm);
+  anResizeTm = setTimeout(()=>{ if(document.getElementById('page-analytics').classList.contains('active')) renderAnalytics(); }, 200);
+});
+function renderAnalytics(){
+  const out = state.records.filter(r => r.status === 'out').map(r => {
+    const d = anDate(r.placedDate), days = anDays(d);
+    return Object.assign({}, r, { placed: d, days, age: anAge(days) });
+  });
+  const all = state.records.map(r => Object.assign({}, r, { placed: anDate(r.placedDate), returned: anDate(r.returnedDate) }));
+  document.getElementById('an-updated').textContent = anUpdatedAt
+    ? 'Fresh from the Sheet at ' + anUpdatedAt.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' }) + ' on ' + anUpdatedAt.toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' })
+    : 'Latest data from the Sheet.';
+
+  // KPI tiles
+  const known = out.filter(x => x.days != null);
+  const avg = known.length ? known.reduce((a,x)=>a+x.days,0) / known.length : 0;
+  const over6 = out.filter(x => x.days != null && x.days > 182).length;
+  const since = Date.now() - 30*86400000;
+  const placed30 = all.filter(x => x.placed && x.placed.getTime() >= since && x.placed.getTime() <= Date.now()).length;
+  const returned30 = all.filter(x => x.returned && x.returned.getTime() >= since).length;
+  const kpi = (num, lbl, sub) => `<div class="kpi"><div class="num">${num}</div><div class="lbl">${lbl}</div>${sub?`<div class="sub">${sub}</div>`:''}</div>`;
+  document.getElementById('an-kpis').innerHTML =
+    kpi(anFmt(out.length), 'Toilets out') +
+    kpi(anFmt(new Set(out.map(x=>x.client)).size), 'Clients with toilets') +
+    kpi(anFmt(new Set(out.map(x=>x.town)).size), 'Towns') +
+    kpi(anAgeText(Math.round(avg)), 'Average time out') +
+    kpi(anFmt(over6), 'Out 6+ months', out.length ? Math.round(over6/out.length*100) + '% of all out' : '') +
+    kpi(anFmt(placed30) + ' / ' + anFmt(returned30), 'Placed / returned', 'last 30 days');
+
+  // weekly placed vs returned (last 12 weeks, weeks start Monday)
+  const monday = d => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x; };
+  const thisWeek = monday(new Date()), weeks = [];
+  for(let i = 11; i >= 0; i--){ const w = new Date(thisWeek); w.setDate(w.getDate() - 7*i); weeks.push(w); }
+  const wk = d => d ? weeks.findIndex(w => d >= w && d < new Date(w.getTime() + 7*86400000)) : -1;
+  const pc = weeks.map(()=>0), rc = weeks.map(()=>0);
+  all.forEach(x => { const a = wk(x.placed); if(a >= 0) pc[a]++; const b = wk(x.returned); if(b >= 0) rc[b]++; });
+  const dm = d => d.toLocaleDateString('en-ZA', { day:'numeric', month:'short' });
+  anColumns(document.getElementById('an-weekly'), weeks.map((w,i)=>({
+    label: dm(w), vals: [pc[i], rc[i]],
+    tip: `<b>Week of ${dm(w)}</b><div class="row"><i style="background:${AN_BLUE}"></i>Placed: ${pc[i]}</div><div class="row"><i style="background:${AN_ORANGE}"></i>Returned: ${rc[i]}</div>`
+  })), [AN_BLUE, AN_ORANGE], { title:'Placed vs returned per week' });
+
+  // age legend
+  const ageLegend = AN_AGES.map(a => `<span><i style="background:${a.color}"></i>${a.label}</span>`).join('');
+  document.getElementById('an-age-legend').innerHTML = ageLegend;
+  document.getElementById('an-age-legend2').innerHTML = ageLegend;
+
+  // towns (top 14 + other)
+  const towns = anGroup(out, x => x.town);
+  const topTowns = towns.slice(0, 14), restTowns = towns.slice(14).flatMap(t => t[1]);
+  const townRows = topTowns.map(([t, l]) => ({ label: t, segs: anAgeSegs(l), tip: anAgeTip(t, l) }));
+  if(restTowns.length) townRows.push({ label: `Other towns (${towns.length - 14})`, segs: anAgeSegs(restTowns), tip: anAgeTip('Other towns', restTowns) });
+  anHBars(document.getElementById('an-towns'), townRows, { title:'Toilets out by town' });
+
+  // clients
+  const clients = anGroup(out, x => x.client);
+  anHBars(document.getElementById('an-clients'), clients.slice(0, 15).map(([c, l]) => {
+    const tw = [...new Set(l.map(x=>x.town))].slice(0, 4).join(', ');
+    return { label: c, segs: anAgeSegs(l), tip: anAgeTip(c, l) + `<div style="margin-top:4px;color:#5b6270">${escHtml(tw)}</div>` };
+  }), { title:'Clients with the most toilets out' });
+
+  // age histogram
+  const bands = [
+    ['0–7 d', 0, 7], ['8–30 d', 8, 30], ['1–3 mo', 31, 91], ['3–6 mo', 92, 182],
+    ['6–12 mo', 183, 365], ['1–2 yr', 366, 730], ['2+ yr', 731, Infinity]
+  ];
+  anColumns(document.getElementById('an-ages'), bands.map(([lbl, a, b]) => {
+    const n = known.filter(x => x.days >= a && x.days <= b).length;
+    return { label: lbl, vals: [n], tip: `<b>${lbl.replace(' d',' days').replace(' mo',' months').replace(' yr',' years')}</b><br>${anFmt(n)} toilet${n===1?'':'s'}` };
+  }), [AN_BLUE], { title:'How long toilets have been out' });
+
+  // toilet types by code prefix
+  const types = anGroup(out, x => (String(x.code||'').toLowerCase().match(/^[a-z]+/) || ['(no code)'])[0]);
+  anHBars(document.getElementById('an-types'), types.slice(0, 12).map(([t, l]) => ({
+    label: t, segs: [{ v: l.length, color: AN_BLUE }], tip: `<b>${escHtml(t)}</b><br>${anFmt(l.length)} out`
+  })), { title:'Toilet types out', labelW: 110 });
+
+  // clients with the longest average time out
+  const clientAge = clients.filter(([,l]) => l.length >= 2)
+    .map(([c, l]) => { const k = l.filter(x=>x.days!=null); return [c, k.length ? k.reduce((a,x)=>a+x.days,0)/k.length : 0, l.length]; })
+    .sort((a,b) => b[1] - a[1]).slice(0, 12);
+  anHBars(document.getElementById('an-clientage'), clientAge.map(([c, d, n]) => ({
+    label: c, segs: [{ v: Math.round(d), color: AN_BLUE }], tip: `<b>${escHtml(c)}</b><br>${n} toilets out<br>Average ${anAgeText(Math.round(d))}`
+  })), { title:'Clients with the longest average time out', fmt: v => anAgeText(v) });
+
+  // busiest towns last 90 days
+  const since90 = Date.now() - 90*86400000;
+  const recent = anGroup(all.filter(x => x.placed && x.placed.getTime() >= since90 && x.placed.getTime() <= Date.now()), x => x.town);
+  anHBars(document.getElementById('an-recent'), recent.slice(0, 12).map(([t, l]) => ({
+    label: t, segs: [{ v: l.length, color: AN_BLUE }],
+    tip: `<b>${escHtml(t)}</b><br>${l.length} placed in the last 90 days<br>${l.filter(x=>x.status==='out').length} still out`
+  })), { title:'Busiest towns in the last 3 months' });
+
+  // longest out table
+  const longest = known.slice().sort((a,b) => b.days - a.days).slice(0, 25);
+  document.getElementById('an-longest').innerHTML =
+    '<thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Street</th><th>Placed</th><th class="num">Time out</th></tr></thead><tbody>' +
+    longest.map(x => `<tr><td class="code">${escHtml(x.code||'—')}</td><td>${escHtml(x.client)}</td><td>${escHtml(x.town)}</td><td>${escHtml(x.street||'')}</td><td>${x.placed ? x.placed.toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' }) : ''}</td><td class="num">${anAgeText(x.days)}</td></tr>`).join('') +
+    '</tbody>';
+
+  // every town table
+  document.getElementById('an-towntable').innerHTML =
+    '<thead><tr><th>Town</th><th class="num">Out</th><th class="num">Clients</th><th class="num">Out 6+ months</th><th class="num">Average time out</th><th class="num">Longest</th></tr></thead><tbody>' +
+    towns.map(([t, l]) => {
+      const k = l.filter(x=>x.days!=null), av = k.length ? k.reduce((a,x)=>a+x.days,0)/k.length : null;
+      const mx = k.length ? Math.max(...k.map(x=>x.days)) : null;
+      return `<tr><td>${escHtml(t)}</td><td class="num">${l.length}</td><td class="num">${new Set(l.map(x=>x.client)).size}</td><td class="num">${l.filter(x=>x.days>182).length}</td><td class="num">${av==null?'—':anAgeText(Math.round(av))}</td><td class="num">${mx==null?'—':anAgeText(mx)}</td></tr>`;
+    }).join('') + '</tbody>';
+}
 
 /* ---------- Manage page ---------- */
 function renderManage(){
