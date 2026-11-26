@@ -269,7 +269,8 @@
     position:sticky; left:36px; background:#fff; z-index:5;
   }
   #out-table tr.ticked td{ background:#e6f4ea; }
-  .tick-box{ width:17px; height:17px; cursor:pointer; accent-color:var(--returned); margin:4px 0 0; }
+  .tick-box{ width:17px; height:17px; cursor:pointer; accent-color:#c23b3b; margin:4px 0 0; }
+  #out-table th:first-child{ color:#c23b3b; }
   .out-colgroup col:nth-child(1){ width:36px; }
   .out-colgroup col:nth-child(2){ width:110px; }
   .out-colgroup col:nth-child(3){ width:170px; }
@@ -1639,6 +1640,7 @@ function generateOutPDF(){
     const cd = state.clientDetails.find(c => c['Client Name'] === r.client);
     const phone = cd && cd['Phone'] ? cd['Phone'] : '';
     return [
+      '',
       r.code || '\u2014',
       r.client || '',
       phone,
@@ -1653,7 +1655,7 @@ function generateOutPDF(){
   doc.autoTable({
     startY: 84,
     margin: { left: margin, right: margin },
-    head: [['Code', 'Client', 'Phone', 'Town', 'Erf', 'Street', 'Placed', 'Note']],
+    head: [['', 'Code', 'Client', 'Phone', 'Town', 'Erf', 'Street', 'Placed', 'Note']],
     body: body,
     theme: 'grid',
     styles: {
@@ -1667,11 +1669,22 @@ function generateOutPDF(){
     },
     alternateRowStyles: { fillColor: [248, 248, 248] }, // very light, ink-friendly
     columnStyles: {
-      0: { fontStyle: 'bold', cellWidth: 62 },
-      2: { cellWidth: 72 },
-      4: { cellWidth: 40 },
-      6: { cellWidth: 58 },
-      7: { cellWidth: 130 },
+      0: { cellWidth: 20 },
+      1: { fontStyle: 'bold', cellWidth: 62 },
+      3: { cellWidth: 72 },
+      5: { cellWidth: 40 },
+      7: { cellWidth: 58 },
+      8: { cellWidth: 130 },
+    },
+    didDrawCell: function(data){
+      if(data.section !== 'body' || data.column.index !== 0) return;
+      if(!outTicks.has(rows[data.row.index].id)) return;
+      const cx = data.cell.x + data.cell.width / 2;
+      const cy = data.cell.y + data.cell.height / 2;
+      doc.setDrawColor(194, 59, 59);
+      doc.setLineWidth(1.6);
+      doc.line(cx - 4.5, cy, cx - 1.5, cy + 3.5);
+      doc.line(cx - 1.5, cy + 3.5, cx + 5, cy - 4);
     },
     didDrawPage: function(data){
       const pageCount = doc.internal.getNumberOfPages();
