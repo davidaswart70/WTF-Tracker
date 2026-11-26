@@ -268,7 +268,7 @@
   #out-table td:nth-child(2), #out-table th:nth-child(2){
     position:sticky; left:36px; background:#fff; z-index:5;
   }
-  #out-table tr.ticked td{ background:#e6f4ea; }
+  #out-table tr.ticked td{ background:#fbe3e3; }
   .tick-box{ width:17px; height:17px; cursor:pointer; accent-color:#c23b3b; margin:4px 0 0; }
   #out-table th:first-child{ color:#c23b3b; }
   .out-colgroup col:nth-child(1){ width:36px; }
@@ -1640,7 +1640,7 @@ function generateOutPDF(){
     const cd = state.clientDetails.find(c => c['Client Name'] === r.client);
     const phone = cd && cd['Phone'] ? cd['Phone'] : '';
     return [
-      '',
+      { content: '', tick: outTicks.has(r.id) },
       r.code || '\u2014',
       r.client || '',
       phone,
@@ -1678,7 +1678,7 @@ function generateOutPDF(){
     },
     didDrawCell: function(data){
       if(data.section !== 'body' || data.column.index !== 0) return;
-      if(!outTicks.has(rows[data.row.index].id)) return;
+      if(!data.cell.raw || !data.cell.raw.tick) return;
       const cx = data.cell.x + data.cell.width / 2;
       const cy = data.cell.y + data.cell.height / 2;
       doc.setDrawColor(194, 59, 59);
