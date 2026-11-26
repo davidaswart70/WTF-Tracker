@@ -295,6 +295,8 @@ function addClient_(name, phone, email) {
   const existingIndex = rows.findIndex(r => r['Client Name'] === name);
   if (existingIndex === -1) {
     sheet.appendRow([name, phone || '', email || '', new Date()]);
+    notifyNewEntry_('client', name, rows.map(r => r['Client Name']),
+      ['Phone: ' + (phone || '-'), 'Email: ' + (email || '-')]);
   } else if (phone || email) {
     // client already exists - fill in contact details if provided and not already set
     const rowNum = existingIndex + 2; // +1 for header, +1 for 0-index
@@ -400,8 +402,65 @@ function getHistory_() {
 
 function addTown_(name) {
   if (!name) throw new Error('Town name required');
-  if (getTowns_().indexOf(name) === -1) getSheet_(SHEET_TOWNS).appendRow([name, new Date()]);
+  const towns = getTowns_();
+  if (towns.indexOf(name) === -1) {
+    getSheet_(SHEET_TOWNS).appendRow([name, new Date()]);
+    notifyNewEntry_('town', name, towns, []);
+  }
   return { ok: true, name: name };
+}
+
+const NOTIFY_EMAIL = 'davidasw@mweb.co.za';
+
+function normName_(s) { return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+
+function editDistance_(a, b) {
+  const dp = [];
+  for (let i = 0; i <= a.length; i++) dp[i] = [i];
+  for (let j = 1; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] = Math.min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + (a[i-1] === b[j-1] ? 0 : 1));
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+/* Existing names that look like the new one - shared substring or only a few
+   letters different - so a likely duplicate stands out in the email. */
+function similarNames_(name, existing) {
+  const n = normName_(name);
+  if (!n) return [];
+  return existing.filter(e => {
+    const x = normName_(e);
+    if (!x || e === name) return false;
+    if ((n.length >= 4 && x.indexOf(n) !== -1) || (x.length >= 4 && n.indexOf(x) !== -1)) return true;
+    return editDistance_(n, x) <= Math.max(2, Math.floor(Math.min(n.length, x.length) * 0.25));
+  }).slice(0, 10);
+}
+
+/* Run this once from the Apps Script editor: it sends a sample email and
+   triggers Google's one-time permission prompt for sending mail. */
+function sendTestEmail() {
+  notifyNewEntry_('client', 'Superior Plant Hir (TEST)', getClients_(), ['Phone: -', 'Email: -']);
+}
+
+// Email failures must never block the save itself.
+function notifyNewEntry_(kind, name, existing, extraLines) {
+  try {
+    const similar = similarNames_(name, existing);
+    const when = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+    const lines = ['New ' + kind + ' created: ' + name, 'When: ' + when].concat(extraLines);
+    lines.push('');
+    lines.push(similar.length
+      ? 'Possible duplicates already in the list:\n - ' + similar.join('\n - ')
+      : 'No similar existing ' + kind + ' names found.');
+    MailApp.sendEmail(NOTIFY_EMAIL,
+      (similar.length ? '[CHECK] ' : '') + 'Weskus Tracker: new ' + kind + ' "' + name + '"',
+      lines.join('\n'));
+  } catch (err) {
+    console.error('notifyNewEntry_ failed: ' + err.message);
+  }
 }
 function addCode_(name) {
   if (!name) throw new Error('Code required');
