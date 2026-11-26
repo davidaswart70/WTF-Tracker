@@ -445,6 +445,10 @@ function sendTestEmail() {
   notifyNewEntry_('client', 'Superior Plant Hir (TEST)', getClients_(), ['Phone: -', 'Email: -']);
 }
 
+function escHtml_(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 // Email failures must never block the save itself.
 function notifyNewEntry_(kind, name, existing, extraLines) {
   try {
@@ -455,9 +459,44 @@ function notifyNewEntry_(kind, name, existing, extraLines) {
     lines.push(similar.length
       ? 'Possible duplicates already in the list:\n - ' + similar.join('\n - ')
       : 'No similar existing ' + kind + ' names found.');
-    MailApp.sendEmail(NOTIFY_EMAIL,
-      (similar.length ? '[CHECK] ' : '') + 'Weskus Tracker: new ' + kind + ' "' + name + '"',
-      lines.join('\n'));
+
+    const kindLabel = kind.charAt(0).toUpperCase() + kind.slice(1);
+    const detailRows = ['When: ' + when].concat(extraLines).map(l => {
+      const i = l.indexOf(': ');
+      return '<tr><td style="padding:6px 0;color:#5b6270;font-size:13px;width:80px;">' + escHtml_(l.slice(0, i)) +
+        '</td><td style="padding:6px 0;color:#20232b;font-size:14px;">' + escHtml_(l.slice(i + 2)) + '</td></tr>';
+    }).join('');
+    const checkBox = similar.length
+      ? '<div style="background:#fdeeee;border-left:4px solid #c23b3b;border-radius:6px;padding:14px 16px;margin-top:18px;">' +
+          '<div style="color:#c23b3b;font-weight:700;font-size:14px;margin-bottom:6px;">Possible duplicate - please check</div>' +
+          '<div style="color:#20232b;font-size:13px;margin-bottom:6px;">These ' + kind + ' names already exist and look similar:</div>' +
+          similar.map(s => '<div style="color:#20232b;font-size:14px;font-weight:600;padding:2px 0;">&bull; ' + escHtml_(s) + '</div>').join('') +
+        '</div>'
+      : '<div style="background:#e2f2e9;border-left:4px solid #2f6f4e;border-radius:6px;padding:14px 16px;margin-top:18px;">' +
+          '<div style="color:#2f6f4e;font-weight:700;font-size:14px;">No similar ' + kind + ' names found - looks fine.</div>' +
+        '</div>';
+    const html =
+      '<div style="background:#DDE3E9;padding:24px 12px;font-family:Arial,Helvetica,sans-serif;">' +
+        '<div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:10px;overflow:hidden;">' +
+          '<div style="background:#202460;color:#ffffff;padding:16px 22px;">' +
+            '<div style="font-size:17px;font-weight:700;">Weskus Toilet Tracker</div>' +
+            '<div style="font-size:12px;opacity:.75;">New ' + kind + ' added</div>' +
+          '</div>' +
+          '<div style="padding:20px 22px 24px;">' +
+            '<div style="display:inline-block;background:#DDE3E9;color:#202460;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;text-transform:uppercase;letter-spacing:.04em;">New ' + kindLabel + '</div>' +
+            '<div style="font-size:22px;font-weight:700;color:#202460;margin:10px 0 12px;">' + escHtml_(name) + '</div>' +
+            '<table style="border-collapse:collapse;width:100%;">' + detailRows + '</table>' +
+            checkBox +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    MailApp.sendEmail({
+      to: NOTIFY_EMAIL,
+      subject: (similar.length ? '[CHECK] ' : '') + 'Weskus Tracker: new ' + kind + ' "' + name + '"',
+      body: lines.join('\n'),
+      htmlBody: html
+    });
   } catch (err) {
     console.error('notifyNewEntry_ failed: ' + err.message);
   }
