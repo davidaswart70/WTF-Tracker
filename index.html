@@ -265,14 +265,20 @@
   .sched-return-input:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(32,36,96,.12); }
   .future-date{ color:#c23b3b; font-weight:700; }
 
-  .out-colgroup col:nth-child(1){ width:110px; }
-  .out-colgroup col:nth-child(2){ width:170px; }
-  .out-colgroup col:nth-child(3){ width:130px; }
-  .out-colgroup col:nth-child(4){ width:60px; }
-  .out-colgroup col:nth-child(5){ width:200px; }
-  .out-colgroup col:nth-child(6){ width:120px; }
-  .out-colgroup col:nth-child(7){ width:150px; }
-  .out-colgroup col:nth-child(8){ width:50px; }
+  #out-table td:nth-child(2), #out-table th:nth-child(2){
+    position:sticky; left:36px; background:#fff; z-index:5;
+  }
+  #out-table tr.ticked td{ background:#e6f4ea; }
+  .tick-box{ width:17px; height:17px; cursor:pointer; accent-color:var(--returned); margin:4px 0 0; }
+  .out-colgroup col:nth-child(1){ width:36px; }
+  .out-colgroup col:nth-child(2){ width:110px; }
+  .out-colgroup col:nth-child(3){ width:170px; }
+  .out-colgroup col:nth-child(4){ width:130px; }
+  .out-colgroup col:nth-child(5){ width:60px; }
+  .out-colgroup col:nth-child(6){ width:200px; }
+  .out-colgroup col:nth-child(7){ width:120px; }
+  .out-colgroup col:nth-child(8){ width:150px; }
+  .out-colgroup col:nth-child(9){ width:50px; }
 
   .search-row{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:10px; margin-bottom:14px; align-items:end; }
   .search-row .field{ gap:4px; }
@@ -439,14 +445,16 @@
     .sched-return-input{ font-size:10px; padding:4px 3px; }
     th{ font-size:9.5px; padding:6px 3px; }
     td{ padding:6px 3px; }
-    .out-colgroup col:nth-child(1){ width:122px; }
-    .out-colgroup col:nth-child(2){ width:68px; }
-    .out-colgroup col:nth-child(3){ width:54px; }
-    .out-colgroup col:nth-child(4){ width:24px; }
-    .out-colgroup col:nth-child(5){ width:76px; }
-    .out-colgroup col:nth-child(6){ width:68px; }
-    .out-colgroup col:nth-child(7){ width:72px; }
-    .out-colgroup col:nth-child(8){ width:26px; }
+    .out-colgroup col:nth-child(1){ width:28px; }
+    #out-table td:nth-child(2), #out-table th:nth-child(2){ left:28px; }
+    .out-colgroup col:nth-child(2){ width:122px; }
+    .out-colgroup col:nth-child(3){ width:68px; }
+    .out-colgroup col:nth-child(4){ width:54px; }
+    .out-colgroup col:nth-child(5){ width:24px; }
+    .out-colgroup col:nth-child(6){ width:76px; }
+    .out-colgroup col:nth-child(7){ width:68px; }
+    .out-colgroup col:nth-child(8){ width:72px; }
+    .out-colgroup col:nth-child(9){ width:26px; }
     .btn{ padding:11px 16px; }
     .undo-fab{ bottom:14px; right:14px; padding:11px 16px; }
   }
@@ -464,14 +472,16 @@
     .sched-return-input{ font-size:9.5px; padding:3px 2px; }
     th{ font-size:8.5px; padding:5px 2px; }
     td{ padding:5px 2px; }
-    .out-colgroup col:nth-child(1){ width:100px; }
-    .out-colgroup col:nth-child(2){ width:60px; }
-    .out-colgroup col:nth-child(3){ width:50px; }
-    .out-colgroup col:nth-child(4){ width:24px; }
-    .out-colgroup col:nth-child(5){ width:66px; }
-    .out-colgroup col:nth-child(6){ width:60px; }
-    .out-colgroup col:nth-child(7){ width:62px; }
-    .out-colgroup col:nth-child(8){ width:26px; }
+    .out-colgroup col:nth-child(1){ width:26px; }
+    #out-table td:nth-child(2), #out-table th:nth-child(2){ left:26px; }
+    .out-colgroup col:nth-child(2){ width:100px; }
+    .out-colgroup col:nth-child(3){ width:60px; }
+    .out-colgroup col:nth-child(4){ width:50px; }
+    .out-colgroup col:nth-child(5){ width:24px; }
+    .out-colgroup col:nth-child(6){ width:66px; }
+    .out-colgroup col:nth-child(7){ width:60px; }
+    .out-colgroup col:nth-child(8){ width:62px; }
+    .out-colgroup col:nth-child(9){ width:26px; }
   }
 
   @media print{
@@ -487,6 +497,7 @@
     td{ border-bottom:1px solid #999; }
     .code{ color:#000; }
     .row-actions, th:last-child, td:last-child{ display:none !important; }
+    #out-table th:first-child, #out-table td:first-child, #clear-ticks-btn{ display:none !important; }
     .pill{ border:1px solid #000; background:#fff !important; color:#000 !important; }
   }
 </style>
@@ -628,14 +639,17 @@
         </div>
         <div class="toolbar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
           <div class="count" id="out-count"></div>
-          <button class="btn btn-ghost btn-sm" id="print-out-btn">Download PDF report</button>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
+            <button class="btn btn-ghost btn-sm" id="clear-ticks-btn">Clear ticks</button>
+            <button class="btn btn-ghost btn-sm" id="print-out-btn">Download PDF report</button>
+          </div>
         </div>
         <div class="table-wrap">
-        <table>
+        <table id="out-table">
           <colgroup class="out-colgroup">
-            <col><col><col><col><col><col><col><col>
+            <col><col><col><col><col><col><col><col><col>
           </colgroup>
-          <thead><tr><th>Code</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th>Scheduled return</th><th></th></tr></thead>
+          <thead><tr><th title="Tick off while doing accounts">&#10003;</th><th>Code</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th>Scheduled return</th><th></th></tr></thead>
           <tbody id="out-tbody"></tbody>
         </table>
         </div>
@@ -1399,6 +1413,32 @@ function todayStr(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
+/* ---------- Accounts ticks (Currently Out) - kept on this device only ---------- */
+const TICKS_KEY = 'wtf-out-ticks';
+function loadTicks(){
+  try{ return new Set(JSON.parse(localStorage.getItem(TICKS_KEY) || '[]')); }catch(e){ return new Set(); }
+}
+function saveTicks(set){
+  try{ localStorage.setItem(TICKS_KEY, JSON.stringify(Array.from(set))); }catch(e){}
+}
+let outTicks = loadTicks();
+
+function updateTickCount(shown){
+  const outIds = new Set(state.records.filter(r=>r.status==='out').map(r=>r.id));
+  const ticked = Array.from(outTicks).filter(id=>outIds.has(id)).length;
+  document.getElementById('out-count').textContent = shown + ' shown' + (ticked ? ' · ' + ticked + ' ticked' : '');
+  document.getElementById('clear-ticks-btn').textContent = ticked ? 'Clear ticks (' + ticked + ')' : 'Clear ticks';
+}
+
+document.getElementById('clear-ticks-btn').addEventListener('click', ()=>{
+  if(!outTicks.size){ toast('Nothing ticked'); return; }
+  if(!confirm('Remove all ticks? The toilets stay in the list - only the tick marks are cleared.')) return;
+  outTicks = new Set();
+  saveTicks(outTicks);
+  renderOut();
+  toast('Ticks cleared');
+});
+
 /* ---------- Currently Out page (per-column search, AND logic, sortable) ---------- */
 function renderOut(){
   const qCode = document.getElementById('s-code').value.trim().toLowerCase();
@@ -1424,14 +1464,17 @@ function renderOut(){
     return 0;
   });
 
-  document.getElementById('out-count').textContent = rows.length + ' shown';
+  updateTickCount(rows.length);
   document.getElementById('out-empty').style.display = rows.length? 'none':'block';
   document.getElementById('print-date').textContent = 'As at ' + todayStr() + ' \u2014 ' + rows.length + ' toilets out';
 
   rows.forEach(r=>{
     const tr = document.createElement('tr');
     const isFuture = r.placedDate && r.placedDate > todayStr();
+    const isTicked = outTicks.has(r.id);
+    if(isTicked) tr.classList.add('ticked');
     tr.innerHTML = `
+      <td style="text-align:center;"><input type="checkbox" class="tick-box" data-tick="${r.id}"${isTicked?' checked':''}></td>
       <td><div class="code-cell">
         <button class="note-btn${r.note?' has-note':''}" data-note="${r.id}" title="${r.note?'Has a note':'Add a note'}">&#128221;</button>
         <input type="text" class="row-input code-input${r.code?'':' input-warn'}" data-id="${r.id}" data-field="code" value="${r.code||''}" placeholder="${r.code?'':'Assign code...'}">
@@ -1445,6 +1488,15 @@ function renderOut(){
       <td style="text-align:center;"><button class="return-btn" data-return="${r.id}" title="Mark returned">&#127968;</button></td>
     `;
     tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('input[data-tick]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      if(cb.checked) outTicks.add(cb.dataset.tick); else outTicks.delete(cb.dataset.tick);
+      saveTicks(outTicks);
+      cb.closest('tr').classList.toggle('ticked', cb.checked);
+      updateTickCount(rows.length);
+    });
   });
 
   tbody.querySelectorAll('button[data-note]').forEach(b=>{
