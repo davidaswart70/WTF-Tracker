@@ -271,15 +271,20 @@
   #out-table tr.ticked td{ background:#fbe3e3; }
   .tick-box{ width:17px; height:17px; cursor:pointer; accent-color:#c23b3b; margin:4px 0 0; }
   #out-table th:first-child{ color:#c23b3b; }
+  #out-table th{ padding-left:13.5px; }
+  #out-table th:nth-child(1), #out-table th:nth-child(3), #out-table th:nth-child(10){ text-align:center; padding-left:6px; }
+  #out-table th:nth-child(9){ padding-left:6px; }
+  #out-table td:nth-child(3){ text-align:center; }
   .out-colgroup col:nth-child(1){ width:36px; }
   .out-colgroup col:nth-child(2){ width:110px; }
-  .out-colgroup col:nth-child(3){ width:170px; }
-  .out-colgroup col:nth-child(4){ width:130px; }
-  .out-colgroup col:nth-child(5){ width:60px; }
-  .out-colgroup col:nth-child(6){ width:200px; }
-  .out-colgroup col:nth-child(7){ width:120px; }
-  .out-colgroup col:nth-child(8){ width:150px; }
-  .out-colgroup col:nth-child(9){ width:50px; }
+  .out-colgroup col:nth-child(3){ width:44px; }
+  .out-colgroup col:nth-child(4){ width:170px; }
+  .out-colgroup col:nth-child(5){ width:130px; }
+  .out-colgroup col:nth-child(6){ width:60px; }
+  .out-colgroup col:nth-child(7){ width:200px; }
+  .out-colgroup col:nth-child(8){ width:120px; }
+  .out-colgroup col:nth-child(9){ width:150px; }
+  .out-colgroup col:nth-child(10){ width:50px; }
 
   .search-row{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:10px; margin-bottom:14px; align-items:end; }
   .search-row .field{ gap:4px; }
@@ -448,14 +453,18 @@
     td{ padding:6px 3px; }
     .out-colgroup col:nth-child(1){ width:28px; }
     #out-table td:nth-child(2), #out-table th:nth-child(2){ left:28px; }
-    .out-colgroup col:nth-child(2){ width:122px; }
-    .out-colgroup col:nth-child(3){ width:68px; }
-    .out-colgroup col:nth-child(4){ width:54px; }
-    .out-colgroup col:nth-child(5){ width:24px; }
-    .out-colgroup col:nth-child(6){ width:76px; }
-    .out-colgroup col:nth-child(7){ width:68px; }
-    .out-colgroup col:nth-child(8){ width:72px; }
-    .out-colgroup col:nth-child(9){ width:26px; }
+    #out-table th{ padding-left:8.5px; }
+    #out-table th:nth-child(1), #out-table th:nth-child(3), #out-table th:nth-child(10){ padding-left:3px; }
+    #out-table th:nth-child(9){ padding-left:3px; }
+    .out-colgroup col:nth-child(2){ width:96px; }
+    .out-colgroup col:nth-child(3){ width:28px; }
+    .out-colgroup col:nth-child(4){ width:68px; }
+    .out-colgroup col:nth-child(5){ width:54px; }
+    .out-colgroup col:nth-child(6){ width:24px; }
+    .out-colgroup col:nth-child(7){ width:76px; }
+    .out-colgroup col:nth-child(8){ width:68px; }
+    .out-colgroup col:nth-child(9){ width:72px; }
+    .out-colgroup col:nth-child(10){ width:26px; }
     .btn{ padding:11px 16px; }
     .undo-fab{ bottom:14px; right:14px; padding:11px 16px; }
   }
@@ -475,14 +484,18 @@
     td{ padding:5px 2px; }
     .out-colgroup col:nth-child(1){ width:26px; }
     #out-table td:nth-child(2), #out-table th:nth-child(2){ left:26px; }
-    .out-colgroup col:nth-child(2){ width:100px; }
-    .out-colgroup col:nth-child(3){ width:60px; }
-    .out-colgroup col:nth-child(4){ width:50px; }
-    .out-colgroup col:nth-child(5){ width:24px; }
-    .out-colgroup col:nth-child(6){ width:66px; }
-    .out-colgroup col:nth-child(7){ width:60px; }
-    .out-colgroup col:nth-child(8){ width:62px; }
-    .out-colgroup col:nth-child(9){ width:26px; }
+    #out-table th{ padding-left:6.5px; }
+    #out-table th:nth-child(1), #out-table th:nth-child(3), #out-table th:nth-child(10){ padding-left:2px; }
+    #out-table th:nth-child(9){ padding-left:2px; }
+    .out-colgroup col:nth-child(2){ width:76px; }
+    .out-colgroup col:nth-child(3){ width:26px; }
+    .out-colgroup col:nth-child(4){ width:60px; }
+    .out-colgroup col:nth-child(5){ width:50px; }
+    .out-colgroup col:nth-child(6){ width:24px; }
+    .out-colgroup col:nth-child(7){ width:66px; }
+    .out-colgroup col:nth-child(8){ width:60px; }
+    .out-colgroup col:nth-child(9){ width:62px; }
+    .out-colgroup col:nth-child(10){ width:26px; }
   }
 
   @media print{
@@ -498,7 +511,7 @@
     td{ border-bottom:1px solid #999; }
     .code{ color:#000; }
     .row-actions, th:last-child, td:last-child{ display:none !important; }
-    #out-table th:first-child, #out-table td:first-child, #clear-ticks-btn{ display:none !important; }
+    #out-table th:first-child, #out-table td:first-child, #out-table th:nth-child(3), #out-table td:nth-child(3), #clear-ticks-btn{ display:none !important; }
     .pill{ border:1px solid #000; background:#fff !important; color:#000 !important; }
   }
 </style>
@@ -648,9 +661,9 @@
         <div class="table-wrap">
         <table id="out-table">
           <colgroup class="out-colgroup">
-            <col><col><col><col><col><col><col><col><col>
+            <col><col><col><col><col><col><col><col><col><col>
           </colgroup>
-          <thead><tr><th title="Tick off while doing accounts">&#10003;</th><th>Code</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th>Scheduled return</th><th></th></tr></thead>
+          <thead><tr><th title="Tick off while doing accounts">&#10003;</th><th>Code</th><th>Note</th><th>Client</th><th>Town</th><th>Erf</th><th>Street</th><th>Placed</th><th>Scheduled return</th><th></th></tr></thead>
           <tbody id="out-tbody"></tbody>
         </table>
         </div>
@@ -1476,10 +1489,8 @@ function renderOut(){
     if(isTicked) tr.classList.add('ticked');
     tr.innerHTML = `
       <td style="text-align:center;"><input type="checkbox" class="tick-box" data-tick="${r.id}"${isTicked?' checked':''}></td>
-      <td><div class="code-cell">
-        <button class="note-btn${r.note?' has-note':''}" data-note="${r.id}" title="${r.note?'Has a note':'Add a note'}">&#128221;</button>
-        <input type="text" class="row-input code-input${r.code?'':' input-warn'}" data-id="${r.id}" data-field="code" value="${r.code||''}" placeholder="${r.code?'':'Assign code...'}">
-      </div></td>
+      <td><input type="text" class="row-input code-input${r.code?'':' input-warn'}" data-id="${r.id}" data-field="code" value="${r.code||''}" placeholder="${r.code?'':'Assign code...'}"></td>
+      <td><button class="note-btn${r.note?' has-note':''}" data-note="${r.id}" title="${r.note?'Has a note':'Add a note'}">&#128221;</button></td>
       <td><input type="text" class="row-input" data-id="${r.id}" data-field="client" value="${r.client||''}"></td>
       <td><input type="text" class="row-input" data-id="${r.id}" data-field="town" value="${r.town||''}"></td>
       <td><input type="text" class="row-input" data-id="${r.id}" data-field="erf" value="${r.erf||''}"></td>
